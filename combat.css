@@ -1,0 +1,21 @@
+.combat-hud {
+  display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px;
+}
+.hp-meter {
+  min-width: 0; padding: 5px 9px 4px; color: #fbefdb;
+  background: linear-gradient(105deg,#111e24fa,#111b20e8);
+  border: 1px solid #97805d; box-shadow: inset 0 0 0 2px #263137, 0 2px 3px #080b0db3;
+  font: 700 13px/1.15 var(--sans); font-variant-numeric: tabular-nums;
+}
+.hp-name { display: flex; align-items: center; gap: 4px; min-height: 17px; }
+.hp-name .item-art { width: 18px; height: 18px; }
+.hp-count { text-align: right; font-size: 11px; color: #c4bbae; }
+.hp-count strong { color: #fff3dc; font-size: 16px; }
+.hp-count small { float: left; color: #d0c2ad; }
+.hp-loss { margin-left: auto; color: #ffda91; font-size: 12px; }
+.hp-track { position: relative; background: #240f14; overflow: hidden; margin: 3px 0; height: 10px; border: 1px solid #070d10; }
+.hp-track i { position: absolute; inset: 0; transform-origin: left center; }
+.hp-trail { background: #ffcf74; }
+.hp-fill { background: linear-gradient(#ace4e0 0 20%,#55b5b4 20% 65%,#267778 65%); }
+.hp-meter[data-side="enemy"] .hp-fill { background: linear-gradient(#ffac91 0 20%,#db725f 20% 65%,#a03d38 65%); }
+.hp-track::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),#17110d6b calc(25% - 1px) 25%); }

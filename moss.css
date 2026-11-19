@@ -1,0 +1,91 @@
+:root {
+  color-scheme: light;
+  --ink: #153d32; --dim: #53685a; --paper: #f6f3e8; --edge: #cecdbb; --leaf: #245840;
+  font: 16px/1.5 "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  color: var(--ink); background: #e9e8da;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, a { font: inherit; touch-action: manipulation; }
+button { color: inherit; cursor: pointer; background: #fffdf5; border: 1px solid var(--edge); border-radius: 9px; min-height: 44px; padding: 7px 13px; font-weight: 700; }
+button:hover:enabled { border-color: var(--leaf); }
+button:focus-visible, a:focus-visible { outline: 3px solid #c78030; outline-offset: 2px; }
+header { background: #163e32; color: #faf1d4; box-shadow: inset 0 -3px #b4a271; }
+.bar, main { max-width: 820px; margin: auto; padding: 0 22px; }
+.bar { min-height: 56px; display: flex; align-items: center; justify-content: space-between; }
+.bar b { font: bold 1.26rem Georgia, "Batang", serif; letter-spacing: -.04em; }
+.bar a { color: #dedcc9; font-size: .86rem; padding: 10px 0; }
+main { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+nav { display: flex; gap: 20px; border-bottom: 1px solid #c3c3b1; }
+nav button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; padding: 12px 2px 8px; color: var(--dim); }
+nav button[aria-pressed=true] { border-bottom-color: var(--leaf); color: var(--ink); }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 16px 0 12px; }
+h1, h2, p { margin: 0; }
+h1, h2 { font-family: Georgia, "Batang", "AppleMyungjo", serif; letter-spacing: -.055em; line-height: 1.2; }
+h1 { font-size: clamp(1.75rem, 5vw, 2.6rem); }
+h2 { font-size: 1.24rem; margin: 2px 0; }
+small, .hint, .record span:not(.portrait), .companion div>span { font-size: .82rem; color: var(--dim); }
+.auto { border-color: #a5ad96; background: #f4f4e8; }
+.auto.on, .primary { background: var(--leaf); color: #fff9e8; border-color: var(--leaf); }
+.landscape {
+  container-type: size; position: relative; height: clamp(215px, 36vh, 360px); isolation: isolate;
+  border-radius: 14px 14px 0 0; overflow: hidden; border: 1px solid #294331;
+  background: linear-gradient(0deg,#183e3244,transparent 52%), url("assets/hunt/moss.webp") center 63% / cover;
+}
+.map-label { position: absolute; left: 12px; top: 12px; border-radius: 5px; color: #fff8df; background: #19382ce8; padding: 3px 9px; font-size: .8rem; }
+.pin { position: absolute; transform: translate(-50%, -50%); background: #fff9dfef; color: #243e31; padding: 5px 10px; box-shadow: 0 3px 6px #152a2990; border: 1px solid #746849; border-radius: 20px; min-height: 44px; font-size: .83rem; }
+.pin:disabled { cursor: default; opacity: 1; }
+.pin { white-space: nowrap; }
+.pin i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #966622; margin-right: 5px; }
+.here { position: absolute; width: 58px; height: 58px; margin: 13px 0 0 -29px; pointer-events: none; filter: drop-shadow(0 2px 3px #122e28); animation: wander .55s ease-out both; }
+@keyframes wander { from { transform: translate(var(--dx),var(--dy)); } }
+.portrait { display: inline-block; height: 64px; width: 64px; flex-shrink: 0; background-size: contain; background-position: center; background-repeat: no-repeat; }
+.here .portrait { width: 100%; height: 100%; }
+.encounter .pin, .encounter .here { visibility: hidden; }
+.encounter-pair { position: absolute; inset: 0; pointer-events: none; }
+.encounter-pair>div { position: absolute; width: clamp(94px,30cqw,180px); aspect-ratio: 1; bottom: 4%; left: 10%; }
+.encounter-pair>div+div { left: auto; right: 11%; bottom: 22%; width: clamp(84px,27cqw,162px); }
+.encounter-pair>div::before { content: ""; position: absolute; bottom: 8%; left: 15%; width: 70%; height: 8%; background: #182a1a88; border-radius: 50%; filter: blur(3px); }
+.encounter-pair .portrait { position: relative; width: 100%; height: 100%; }
+@media (prefers-reduced-motion: no-preference) {
+  .encounter.arriving .here, .encounter.arriving .pin { animation: depart .55s step-end both; }
+  .encounter.arriving .here { animation: wander .55s ease-out both, depart .55s step-end both; }
+  .arriving .encounter-pair { animation: appear .25s .55s both; }
+}
+@keyframes depart { from { visibility: visible; } to { visibility: hidden; } }
+@keyframes appear { from { opacity: 0; } to { opacity: 1; } }
+.tree { background-image: url("assets/hunt/tree.webp"); }
+.moth { background-image: url("assets/hunt/moth.webp"); }
+.wolf { background-image: url("assets/hunt/wolf.webp"); }
+.boar { background-image: url("assets/boar-sheet.png"); background-size: 800% 100%; background-position: 0 center; image-rendering: pixelated; }
+.field-card, .record { background: var(--paper); border: 1px solid var(--edge); }
+.field-card { border-radius: 0 0 14px 14px; padding: 14px; }
+.companion, .record, .fighter { display: flex; align-items: center; gap: 12px; }
+.companion button, .record button, .tag { margin-left: auto; }
+.hint { margin: 12px 0 5px; }
+.actions, .routes { display: flex; gap: 7px; }
+.routes button { flex: 1; padding: 7px 3px; }
+.routes small { display: block; font-weight: normal; }
+.match { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.fighter { gap: 6px; min-width: 0; }
+.fighter>div { flex: 1; }
+.fighter b { display: block; line-height: 1.35; }
+.health meter { display: block; width: 100%; accent-color: #4f8655; height: 14px; }
+.health small { font-size: .72rem; }
+.actions button { flex: 1; }
+#notice { padding: 11px 2px; font-size: .89rem; }
+.journal { display: grid; gap: 9px; }
+.record { padding: 12px; border-radius: 10px; }
+.tag { white-space: nowrap; font-size: .83rem; color: var(--leaf); }
+.unknown .portrait { filter: brightness(0); opacity: .32; }
+@media (max-width: 540px) {
+  .bar, main { padding-left: 12px; padding-right: 12px; }
+  .section-head { margin-top: 12px; }
+  .field-card { padding: 10px; }
+  .fighter .portrait { width: 39px; height: 39px; }
+  .fighter b { font-size: .85rem; }
+  .companion, .record { gap: 6px; }
+  .companion button, .actions button { font-size: .88rem; padding: 7px 5px; }
+  .here { width: 46px; height: 46px; margin-left: -23px; }
+}
+@media (prefers-reduced-motion: reduce) { .here { animation: none; } }

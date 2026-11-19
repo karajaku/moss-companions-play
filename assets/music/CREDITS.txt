@@ -1,0 +1,19 @@
+Emberforge original procedural soundtrack
+
+Twelve original instrumental loops composed and synthesized for this project.
+No third-party samples, recordings, or existing melodies were used.
+Source score and synthesizer: tools/generate-music.cjs in the private source repository.
+Format: mono PCM WAV, 22,050 Hz, 16-bit. Circular note tails and room reflections.
+
+forge - 불씨와 모루: warm plucked strings, low pulse, fire texture
+world - 숯수레의 길: bright flute and open chords
+forest - 이끼숲의 숨결: modal flute and soft wind
+mine - 물에 잠긴 갱도: spacious bells, low drone, water drops
+depths - 심해의 맥박: darker intervals and a low diving pulse
+tower - 수문장의 회랑: resonant bells and measured footsteps
+altar - 별빛의 순환: slow luminous bells and sustained fifths
+battle - 엄니와 칼날: quick plucked ostinato and hand drums
+trial - 마지막 한 단: tense semitone motif and steady percussion
+rain - 비에 젖은 손님: quiet plucked melody and rain texture
+home - 두 사람의 망치: warm major pentatonic melody
+triumph - 돌아오는 길: bright bells and a gentle celebratory pulse

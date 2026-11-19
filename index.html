@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#182c24">
+  <link rel="icon" href="assets/hunt/tree.webp">
+  <title>이끼숲 동료들</title>
+  <link rel="stylesheet" href="shell.css">
+  <link rel="stylesheet" href="combat.css">
+  <link rel="stylesheet" href="hunt-watch.css">
+</head>
+<body class="ui-game" data-place="forest">
+  <header><h1>이끼숲 동료들</h1><span id="gold"></span></header>
+  <nav id="pageNav" aria-label="활동"><button data-go="forest">사냥터</button><button data-go="forest/gather">채집·제작</button></nav>
+  <main id="screen"></main>
+  <p id="notice" role="status"></p>
+  <section id="saveError" hidden role="alert">진행을 저장할 수 없습니다. <button id="reload">다시 불러오기</button><button id="recover" hidden>이전 기록 복구</button></section>
+  <details id="settings"><summary>사냥권·설정</summary><p id="wallet"></p><button data-act="daily">오늘의 사냥권 받기</button>
+    <label><input type="checkbox" id="motion">전투 연출</label><label><input type="checkbox" id="music">배경 음악</label><label><input type="checkbox" id="sound">효과음</label>
+  </details>
+  <script src="icons.js"></script><script src="dice-combat.js"></script><script src="hunt-trail.js"></script><script src="fieldcraft.js"></script>
+  <script src="game.js"></script><script src="save-store.js"></script><script src="music.js"></script><script src="sound.js"></script>
+  <script src="helpers.js"></script><script src="combat-hud.js"></script><script src="fieldcraft-view.js"></script>
+  <script src="hunt-effects.js"></script><script src="hunt-watch.js"></script><script src="ui.js"></script>
+</body></html>
