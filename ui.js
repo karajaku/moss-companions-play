@@ -39,7 +39,7 @@ function render() {
 function liningView() {
   const cost = Game.liningCosts[state.huntLining];
   return card("숲 방호 안감",desc("안감 "+state.huntLining+"단계 · 숲결 섬유 "+fmt(state.forestFiber)+"개") +
-    btn("craftHuntLining",cost ? "섬유 "+cost+"개로 보강" : "최고 단계","","action",!cost || state.forestFiber<cost));
+    btn("craftHuntLining",cost ? "섬유 "+cost+"개로 보강" : "최고 단계","","action",!cost || state.forestFiber<cost), "shield");
 }
 function locked(fn) {
   queue = queue.then(() => exclusive(fn)).catch(error => {
@@ -122,23 +122,33 @@ setInterval(() => {
   FieldcraftView.refreshTrips(state);
 },1000);
 const sheets = new Map();
+const woodlandSprites = new Set(["tree","moth","wolf","goblin"]);
+function combatSprite(name) {
+  const woodland = woodlandSprites.has(name);
+  const size = woodland ? 224 : 144;
+  return '<canvas class="' + (woodland ? 'trail-creature' : '') + '" width="' + size + '" height="' + size +
+    '" data-sprite="' + name + '" aria-hidden="true"></canvas>';
+}
 function drawFrames(now) {
   for (const canvas of document.querySelectorAll("canvas[data-sprite]")) {
     const name = canvas.dataset.sprite;
     let sheet = sheets.get(name);
     if (!sheet) {
-      sheet = new Image(); sheet.src = "assets/" + name + "-sheet.png"; sheets.set(name,sheet);
+      sheet = new Image();
+      sheet.src = woodlandSprites.has(name) ? "assets/hunt/" + name + "-sheet.webp" : "assets/" + name + "-sheet.png";
+      sheets.set(name,sheet);
       sheet.onload = () => drawFrames(performance.now());
     }
     if (!sheet.naturalWidth) continue;
     const start = Number(canvas.closest(".watch-actor").dataset.attackAt);
-    const attacking = now >= start && now - start < 360 && name === "boar";
+    const attacking = now >= start && now - start < 360;
     const frame = !motionEnabled() ? 0 : attacking ? 4 + Math.floor((now-start)/90) : Math.floor(now/180)%4;
     if (canvas.dataset.frame === String(frame)) continue;
     const ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0,0,144,144);
-    ctx.drawImage(sheet,frame*144,0,144,144,0,0,144,144);
+    const size = sheet.naturalHeight;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(sheet,frame*size,0,size,size,0,0,canvas.width,canvas.height);
     canvas.dataset.frame = String(frame);
   }
 }

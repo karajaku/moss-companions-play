@@ -21,7 +21,6 @@
 .trail-creature { display:block;width:100%;height:auto;filter:drop-shadow(0 4px 3px #102017); }
 .trail-detail { color:#ffedc7;font-size:13px;line-height:1.4;text-wrap:balance; }
 .trail-replay { align-self:center;max-width:100%;padding:6px 10px;border-radius:6px;background:#26372f;color:#f2dfbb; }
-body:has(.watch-arena[data-region])::before { background:radial-gradient(ellipse at top,#354539,#172721 75%); }
 .watch-view:has([data-region]) { gap:6px; }
 .watch-view:has([data-region]) .watch-stage { padding:2px 3px;line-height:1.3; }
 .watch-view:has([data-region]) .watch-reward { flex:none;min-height:32px;gap:4px; }

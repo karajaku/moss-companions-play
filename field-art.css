@@ -1,0 +1,134 @@
+/* The camp frames the play space. Region art and actors keep their own ground anchors. */
+:root {
+  --sans: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --line: #8e885e;
+  --surface: #172f29;
+  --gold: #e6cd8a;
+  background: #101f1e;
+  font-family: var(--sans);
+}
+body.ui-game {
+  max-width: 1040px;
+  padding: clamp(10px, 2vw, 24px);
+  background: transparent;
+}
+body.ui-game::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(#10201fe8, #101f1ef2), url("assets/field/camp.webp") center / cover;
+}
+.ui-game > header {
+  min-height: clamp(96px, 13vw, 150px); margin: 0; padding: 16px clamp(14px, 3vw, 36px);
+  background: linear-gradient(85deg,#122622ec, #13272590 44%,transparent 75%),
+    url("assets/field/camp.webp") center 57% / cover;
+  border: 1px solid var(--line); border-bottom: 0; border-radius: 12px 12px 0 0;
+}
+.ui-game h1 {
+  color: #fff4cf; font: 800 clamp(1.6rem, 4vw, 2.8rem)/1.15 Georgia, "Batang", "AppleMyungjo", serif;
+  letter-spacing: -.055em; text-shadow: 0 2px 2px #111e18, 0 3px 12px #08170c;
+}
+#gold {
+  align-self: flex-start; background: #152622ee; border: 1px solid #a2905b; border-radius: 20px;
+  padding: 4px 12px; font: 700 .9rem/1.4 var(--sans); color: #ffe3a0;
+}
+#gold::before { content: ""; display: inline-block; width: .7em; height: .7em; border-radius: 50%; background: #e5b657; border: 2px solid #ffe6a0; margin-right: 6px; }
+#pageNav {
+  gap: 0; padding: 0 8px; border: 1px solid var(--line); border-radius: 0 0 9px 9px; background: #162925;
+}
+#pageNav button {
+  flex: 0 1 170px; min-height: 44px; color: #becdc0; border: 0; border-bottom: 3px solid transparent;
+  background: transparent; border-radius: 0; font-weight: 700;
+}
+#pageNav [aria-current="page"] { color: #ffdf8f; border-bottom-color: #dfbc66; background: linear-gradient(0deg,#c9b36d20,transparent); }
+:where(button,select,summary):focus-visible { outline: 3px solid #ffe19a; outline-offset: 2px; }
+.ui-game main.hunt { height: auto; min-height: 0; }
+.ui-game .watch-view {
+  width: 100%; max-height: none; min-height: 0; margin: 0;
+  border: 1px solid #687559; border-radius: 12px; overflow: clip;
+  background: var(--surface); box-shadow: 0 8px 24px #08181266;
+  grid-template-rows: auto auto auto; gap: 0;
+}
+.ui-game .watch-view .watch-stage {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 48px; padding: 8px 14px;
+  background: linear-gradient(100deg,#354738,#20352f); border-bottom: 1px solid #737955;
+}
+.stage-rank { display: inline-flex; gap: 5px; align-items: baseline; color: #edd59d; letter-spacing: 0; font-size: .72rem; }
+.stage-rank b { font: bold 1.45rem/1 Georgia,serif; }
+.watch-stage .trail-region { font: bold 1.12rem "Batang","AppleMyungjo",serif; margin-left: 0; }
+.watch-stage .trail-wave { margin-left: auto; font-size: .76rem; }
+.ui-game .watch-arena { height: clamp(240px, 42vh, 420px); background: url("assets/hunt/moss.webp") center / cover; }
+.ui-game .watch-arena[data-region] { border: 0; border-radius: 0; }
+.ui-game .watch-fighter .hp-meter { max-width: 225px; border-radius: 5px; }
+.watch-fighter .hp-name { font: 700 .8rem/1.3 var(--sans); }
+.watch-arena .player .hp-meter { left: 6px; }
+.watch-arena .enemy .hp-meter { right: 6px; }
+.hunt-console { display: grid; align-content: center; gap: 10px; padding: 12px; min-width: 0; background: linear-gradient(135deg,#233c30,#162d29); }
+.hunt-console .watch-reward { min-width: 0; }
+.hunt-console .watch-start {
+  margin: 0; align-items: center; border: 1px solid #e1c678; border-radius: 7px;
+  color: #282b1c; background: linear-gradient(#efdb98,#cfaf65);
+  font-weight: 800; box-shadow: inset 0 0 0 2px #f7e2a85c, 0 2px 0 #0e1c18;
+}
+.hunt-console .watch-start:hover:enabled { background: #f5df9d; }
+.watch-start-label { font-size: 1.04rem; }
+.ui-game .watch-ticket-bar { width: 88%; text-align: center; background: #28382b; }
+.ui-game .watch-ticket-fill { background: linear-gradient(90deg,#50633d,#526d49); }
+.starter-pick { border: 0; padding: 0; margin: 0; width: 100%; min-width: 0; }
+.starter-pick legend { padding: 0 0 6px; font-size: .8rem; color: #e8d6a8; font-weight: 700; }
+.starter-pick > div { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+.starter-pick button {
+  min-width: 0; display: grid; justify-items: center; gap: 2px; border: 1px solid #566c5a; padding: 5px 2px 7px;
+  background: radial-gradient(ellipse at 50% 27%,#49624a,#21382e 72%); color: #e2e8d6;
+}
+.starter-pick button[aria-pressed="true"] { border-color: #edcf78; box-shadow: inset 0 -3px #d8b668; background: radial-gradient(ellipse at 50% 27%,#747348,#354335 75%); }
+.starter-pick b { font-size: .76rem; }
+.starter-pick small { font-size: .67rem; color: #d3dcc9; }
+.companion-art { display: inline-block; flex: none; width: 44px; height: 44px; background: center / contain no-repeat; }
+.art-tree { background-image: url("assets/hunt/tree.webp"); }
+.art-moth { background-image: url("assets/hunt/moth.webp"); }
+.art-wolf { background-image: url("assets/hunt/wolf.webp"); }
+.art-boar,.art-golem,.art-dragon { background-size: 800% 100%; background-position: left; image-rendering: pixelated; }
+.art-boar { background-image: url("assets/boar-sheet.png"); }
+.art-golem { background-image: url("assets/golem-sheet.png"); }
+.art-dragon { background-image: url("assets/dragon-sheet.png"); }
+.ui-game .card,.ui-game details { background: linear-gradient(120deg,#273e33,#1c322c); border: 1px solid #606f55; }
+.gather .card { padding: 14px; }
+.gather h3 { display: flex; align-items: center; gap: 7px; }
+.gather h3 svg { color: #d9be78; }
+.net-grades .gather-site {
+  overflow: hidden; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start;
+  padding: 0 0 8px; background: #192d24; border: 1px solid #708264;
+}
+.gather-site img { width: 100%; height: clamp(68px,13vw,134px); object-fit: cover; margin-bottom: 4px; }
+.net-row .action { margin-left: auto; }
+.net-row { justify-content: flex-start; }
+.net-art { flex: none; display: inline-block; width: 40px; height: 40px; background: url("assets/field/nets.png") left center / 300% 100%; image-rendering: pixelated; }
+.net-reinforced { background-position: center; }
+.net-prism { background-position: right; }
+.net-grades .net-art { justify-self: center; }
+.net-choice .net-grades .action:disabled { opacity: .78; }
+.gather .desc { font-size: .85rem; }
+.gather > .card { display: grid; gap: 8px; }
+.gather > .card button { justify-self: start; }
+#settings { color: #cfdbc9; }
+@media (min-width: 840px) {
+  .ui-game .watch-view {
+    grid-template-columns: minmax(0, 1.8fr) minmax(300px, 1fr);
+    grid-template-rows: auto minmax(350px,auto);
+  }
+  .ui-game .watch-stage { grid-column: 1/-1; }
+  .ui-game .watch-arena { height: clamp(350px, 48vh, 480px); }
+  .hunt-console { padding: 18px; border-left: 1px solid #687559; gap: 16px; }
+  .field-workshop { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; }
+  .field-workshop > .card-trees,.field-workshop > button { grid-column: 1/-1; }
+  .starter-pick .companion-art { width: 54px; height: 54px; }
+}
+@media (max-width: 480px) {
+  body.ui-game { padding: 8px 8px max(14px, env(safe-area-inset-bottom)); }
+  .ui-game > header { min-height: 82px; }
+  #pageNav button { flex: 1; }
+  .ui-game .watch-arena { height: clamp(200px, 32dvh, 330px); }
+  .ui-game .watch-skills { gap: 4px; }
+  .hunt-console { gap: 6px; padding: 8px; }
+  .ui-game .watch-start { min-height: 55px!important; padding: 5px 10px; gap: 2px; }
+  .net-grades .gather-site b { font-size: .84rem; }
+}

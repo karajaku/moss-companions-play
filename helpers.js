@@ -28,3 +28,7 @@ const card = (title, content, artwork = "") =>
   '<section class="card' + (artwork ? ' illustrated-card card-' + artwork : '') + '"><h3>' +
   (artwork ? icon(artwork) : "") + title + "</h3>" + content + "</section>";
 const desc = (text) => '<p class="desc">' + text + "</p>";
+function companionPortrait(kind) {
+  const sprite = Game.trail.enemy(1, kind).sprite;
+  return '<span class="companion-art art-' + sprite + '" aria-hidden="true"></span>';
+}

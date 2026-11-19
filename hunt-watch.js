@@ -17,14 +17,19 @@ const HuntWatch=(()=>{
     const motion = motionEnabled() ? '' : '<div class="watch-motion-hint"><button class="mini" data-motion-policy="full"><small>' +
       (reducedMotion.matches && !prefs.motionOverride ? '기기 설정으로 정지' : '연출 꺼짐') + '</small>연출 켜기</button></div>';
     if (active) return motion;
-    const team = s.companions, choicesForTeam = team.started ? Object.keys(team.xp) : Game.trail.starters;
-    const partnerSelect = '<label class="partner-pick">' + (s.hunt ? '다음 출전' : team.started ? '출전 동료' : '시작 동료') +
-      '<select aria-label="출전 동료 선택" data-partner>' + choicesForTeam.map(kind => {
-        const level = Game.trail.partnerLevel(team.xp[kind] ?? team.xp[team.active]);
+    const team = s.companions;
+    const partnerSelect = team.started ? '<label class="partner-pick">' + companionPortrait(team.active) + (s.hunt ? '다음 출전' : '출전 동료') +
+      '<select aria-label="출전 동료 선택" data-partner>' + Object.keys(team.xp).map(kind => {
+        const level = Game.trail.partnerLevel(team.xp[kind]);
         const away = s.fieldcraft.trips[kind];
         return '<option value="' + kind + '"' + (team.active === kind ? ' selected' : '') + (away ? ' disabled' : '') + '>' +
           Game.trail.enemy(1,kind).name + ' · ' + (away ? '채집 중' : 'Lv.' + level) + '</option>';
-      }).join('') + '</select></label>';
+      }).join('') + '</select></label>' :
+      '<fieldset class="starter-pick"><legend>시작 동료</legend><div>' + Game.trail.starters.map(kind =>
+        '<button data-act="choosePartner" data-arg="' + kind + '" aria-pressed="' + (team.active === kind) + '"' +
+        (s.fieldcraft.trips[team.active] ? ' disabled' : '') + '>' + companionPortrait(kind) +
+        '<b>' + Game.trail.enemy(1,kind).name + '</b><small>' + Game.fieldcraft.types[kind] + ' 타입</small></button>'
+      ).join('') + '</div></fieldset>';
     const chooseRank = mode === 'repeat' || s.huntBest >= 60;
     const choices = chooseRank ? Array.from({length: Math.min(60, s.huntBest)}, (_, i) => {
       const n = i + 1;
@@ -116,10 +121,9 @@ const HuntWatch=(()=>{
     const resultHealth=!h?(outcome||((reward||pending()||reason.startsWith('패배'))?s.lastHunt?.health:null)):null;
     const hp=h?.hp??resultHealth?.hp??st.hp,max=h?.maxHp??resultHealth?.maxHp??st.hp,enemyHp=h?.enemyHp??resultHealth?.enemyHp??Game.trail.opponent(rank,enemy.kind).hp;
     const total=h?.enemyMax??resultHealth?.enemyMax??enemyHp;
-    const fighter=(side,label,asset,width,current,maxHp)=>'<div class="watch-fighter '+side+'"'+(side==='enemy'&&enemy.elite?' data-elite="true"':'')+' data-action="'+(roll?.[side==='player'?'player':'enemy']||'')+'">'+healthMeter(side,label,current,maxHp)+
-      '<div class="watch-actor'+(asset==='moth'?' airborne':'')+'"'+(current<=0?' data-defeated="true"':'')+'>'+(['wolf','moth','tree','goblin'].includes(asset)?
-        '<img class="trail-creature" src="assets/hunt/'+asset+'.webp" alt="">':'<canvas width="'+width+'" height="144" data-sprite="'+asset+'" aria-hidden="true"></canvas>')+'<div class="watch-ward" aria-hidden="true">'+icon('shield')+'</div></div>'+
-      (useDice?die(roll?.[side==='player'?'playerFace':'enemyFace'],roll?.[side==='player'?'player':'enemy'],side):'')+
+    const fighter=(side,label,asset,current,maxHp)=>'<div class="watch-fighter '+side+'"'+(side==='enemy'&&enemy.elite?' data-elite="true"':'')+' data-action="'+(roll?.[side==='player'?'player':'enemy']||'')+'">'+healthMeter(side,label,current,maxHp)+
+      '<div class="watch-actor'+(asset==='moth'?' airborne':'')+'"'+(current<=0?' data-defeated="true"':'')+'>'+combatSprite(asset)+'<div class="watch-ward" aria-hidden="true">'+icon('shield')+'</div></div>'+
+      (useDice && encounter?die(roll?.[side==='player'?'playerFace':'enemyFace'],roll?.[side==='player'?'player':'enemy'],side):'')+
       (side==='enemy'?enemySkill(h):'')+'</div>';
     const w=Game.huntingStatus(s),empty=!w.free&&!w.purchased&&!h&&!pending();
     const held = h || pending(), finished = !held && !validRank(nextRank());
@@ -137,16 +141,16 @@ const HuntWatch=(()=>{
     if ((!h || Game.trail.awaitingNext(h)) && joined.length) detail = '새 동료 · ' + joined.map(kind => Game.trail.enemy(rank,kind).name).join(', ');
     if (result?.partner && result.chestId) detail += (detail ? ' / ' : '') + ally.name + ' Lv.' + Game.trail.partner(s,deployed.kind).level;
     if (encounter?.captureUsed && !joined.length && (!h || Game.trail.awaitingNext(h))) detail = '포획 실패 · 그물을 빠져나갔습니다.';
-    return '<section class="watch-view'+(offer?' capture-ready':'')+'"><div class="watch-stage">STAGE <b>'+rank+'</b> <span class="trail-region">'+(trail?area.name:enemy.habitat)+'</span>'+(trail?'<span class="trail-wave">'+(enemy.elite?'우두머리 · ':'')+'조우 '+(wave+1)+' / '+pack.length+'</span>':'')+(h?.ripostes>0?'<span class="watch-counter-status">승리 시 반격 +25%</span>':'')+'</div>'+
-      '<div class="scene watch-arena combat-hud"'+(trail?' data-region="'+area.id+'"':'')+'>'+fighter('player',allyLabel,sprite,144,hp,max)+fighter('enemy',enemy.name,enemy.sprite||'boar',144,enemyHp,total)+'</div>'+
-      (offer ? FieldcraftView.capture(s,offer) : '<div class="watch-reward" role="status">'+(detail?'<div class="trail-detail">'+detail+'</div>':'')+skills(h)+(reward?'<div class="watch-receipt"><div class="watch-receipt-head"><b>'+reward.rank+'단계 클리어</b><strong>'+icon('coins')+' +'+fmt(reward.gold)+' G</strong>'+
+    return '<section class="watch-view'+(offer?' capture-ready':'')+'"><div class="watch-stage"><span class="stage-rank">단계 <b>'+rank+'</b></span> <span class="trail-region">'+(trail?area.name:enemy.habitat)+'</span>'+(trail?'<span class="trail-wave">'+(enemy.elite?'우두머리 · ':'')+'조우 '+(wave+1)+' / '+pack.length+'</span>':'')+(h?.ripostes>0?'<span class="watch-counter-status">승리 시 반격 +25%</span>':'')+'</div>'+
+      '<div class="scene watch-arena combat-hud"'+(trail?' data-region="'+area.id+'"':'')+'>'+fighter('player',allyLabel,sprite,hp,max)+fighter('enemy',enemy.name,enemy.sprite||'boar',enemyHp,total)+'</div>'+
+      '<div class="hunt-console">' + (offer ? FieldcraftView.capture(s,offer) : '<div class="watch-reward" role="status">'+(detail?'<div class="trail-detail">'+detail+'</div>':'')+skills(h)+(reward?'<div class="watch-receipt"><div class="watch-receipt-head"><b>'+reward.rank+'단계 클리어</b><strong>'+icon('coins')+' +'+fmt(reward.gold)+' G</strong>'+
         (!active && reward.fiber ? '<button class="action lining-link" data-go="forest/gather">'+icon('shield')+'안감 제작</button>' : '')+'</div><div class="watch-loot">'+
         (reward.fiber ? '<span>'+icon('trees')+'숲결 섬유 +'+reward.fiber+'</span>' : '')+
         (reward.goblinGold?'<span>'+icon('coins')+'고블린 +'+fmt(reward.goblinGold)+' G 포함</span>':'')+
         (reward.counter>0?'<span class="watch-counter-reward">반격 +'+fmt(reward.counter)+' G 포함</span>':'')+
         [[reward.shards,'sparkles','별의 파편'],[reward.scrolls,'scroll-text','주문서'],...[0,1,2].map(i=>[reward.charms[i],['trees','hammer','star'][i],Game.blessings[i]])].filter(([n])=>n).map(([n,ic,title])=>'<span aria-label="'+title+' '+n+'개" title="'+title+'">'+icon(ic)+' +'+n+'</span>').join('')+'</div></div>':reason&&!(h&&reason==='일시 중단')?'<b>'+reason+'</b>':'')+'</div>'+
       selector(s, held)+(away ? go('forest/gather','출전 동료 채집 중 · 복귀하기','action') : '<button class="primary watch-start" '+(empty&&!active?'data-open="huntWallet"':'data-watch="toggle"')+(finished?' disabled':'')+'><span class="watch-start-label">'+icon(active?'shield':'sword')+label+'</span>'+ticketBar(w)+'</button>'))+
-      '</section>';
+      '</div></section>';
   };
   function beforeRender(){if(active&&!allowed())stop('',false);}
   function refreshWallet() {
