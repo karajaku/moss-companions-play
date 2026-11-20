@@ -38,11 +38,30 @@ const BiomeCatalog = (() => {
     return { id, region, habitat, trait, forms };
   }
 
+  function dewRabbit() {
+    const rabbit = family("f001", "b01", "고사리 그늘",
+      "말린 고사리 귀로 새벽 이슬을 받아 숲길에서 만난 이웃과 나눈다.",
+      ["이슬귀토끼", "양치깃뜀토", "고사리관 토끼"],
+      [["이슬차기", "strike"], ["잎귀감싸기", "guard"], ["고사리샘", "heal"]]);
+    const stories = [
+      "처음 숲길을 나선 아침, 귀 끝의 이슬을 놓쳐 두 앞발로 겨우 받았다. 한 모금이 아쉬웠지만 발치에 웅크린 새싹에게 먼저 건넸다.",
+      "안개 속에서 길을 잃은 동료를 만나자 자란 잎귀를 우산처럼 펼쳤다. 잎 끝으로 이슬 자국을 남기며 모두가 따라올 만큼 천천히 뛰었다.",
+      "가뭄에 샘이 마르자 동료들이 오래전 이슬 자국을 따라 돌아왔다. 고사리관에 모인 물을 한 방울씩 땅에 돌려주자 그 자리에 다시 물길이 열렸다.",
+    ];
+    const actions = [["idle", "대기"], ["hunt", "사냥"], ["battle", "전투"]];
+    rabbit.forms.forEach((form, index) => {
+      form.story = stories[index];
+      form.actions = actions.map(([id, name]) => ({
+        id, name, frames: 3,
+        image: `assets/biomes/dew/${rabbit.id}-${index + 1}-${id}.webp`,
+      }));
+    });
+    return rabbit;
+  }
+
   const families = [
     // 이슬이끼 수림
-    family("f001", "b01", "고사리 그늘",
-      "긴 귀의 이슬 홈으로 물을 모아 말린 잎 아래 새싹에 흘려준다.",
-      ["이슬귀토끼","양치깃뜀토","고사리관 토끼"], [["이슬차기","strike"],["잎귀감싸기","guard"],["고사리샘","heal"]]),
+    dewRabbit(),
     family("f002", "b01", "솔방울 퇴적층",
       "등의 솔방울 비늘이 습기에 따라 열리며 새 씨앗을 퍼뜨린다.",
       ["씨앗고슴","솔방울가시","숲솔방패"], [["솔씨쏘기","shot"],["비늘닫기","guard"],["산개파종","spores"]]),
