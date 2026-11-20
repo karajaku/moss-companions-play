@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#15281f">
+  <title>바이옴 생물 도감 · 이끼숲 동료들</title>
+  <link rel="icon" href="assets/hunt/moth.webp">
+  <link rel="stylesheet" href="biomes.css">
+  <script defer src="biome-catalog.js"></script>
+  <script defer src="biomes-view.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <h1>바이옴 생물 도감</h1>
+    <a href="index.html#forest">← 본편 사냥터</a>
+  </header>
+  <main>
+    <section class="landscape" aria-labelledby="region-name">
+      <img id="region-image" alt="">
+      <div class="region-nav">
+        <label for="region-picker">지역 선택</label>
+        <select id="region-picker"></select>
+      </div>
+      <div class="landscape-copy">
+        <h2 id="region-name"></h2>
+        <p id="region-description"></p>
+      </div>
+    </section>
+    <section class="entries" aria-labelledby="list-title">
+      <header class="section-head"><h2 id="list-title">서식 동료</h2><span id="family-count"></span></header>
+      <div id="family-list"></div>
+    </section>
+  </main>
+  <dialog id="family-detail" aria-labelledby="detail-name">
+    <div class="detail-inner">
+      <header class="section-head">
+        <div><p id="detail-region"></p><h2 id="detail-name"></h2></div>
+        <form method="dialog"><button class="close" aria-label="상세 닫기" autofocus>닫기</button></form>
+      </header>
+      <p id="habitat"></p><p id="trait"></p>
+      <div id="evolution" role="group" aria-label="진화 단계 선택"></div>
+      <section class="skill-panel" aria-live="polite" aria-labelledby="skill-heading">
+        <h3 id="skill-heading"></h3>
+        <dl id="skills"></dl>
+      </section>
+    </div>
+  </dialog>
+</body>
+</html>
