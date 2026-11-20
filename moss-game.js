@@ -41,7 +41,7 @@ const MossGame = (() => {
     } else {
       s.place = "camp";
       s.battle = null;
-      s.note = "동료가 지쳐 야영지로 돌아왔어요. 휴식을 마치고 다시 출발할 수 있어요.";
+      s.note = "전투 패배 · 동료가 지쳐 야영지에서 휴식했어요.";
     }
   }
   // The caller commits the altered copy and its revision together.
@@ -74,7 +74,7 @@ const MossGame = (() => {
         s.battle = null;
         s.note = species[b.kind].name + " 포획! 경험치 +2" + gain(ally, 2);
       } else {
-        s.note = "포획을 벗어났어요";
+        s.note = species[b.kind].name + "의 코어 탈출";
         react(s);
       }
     } else if (action === "switch" && !b && s.team.some(member => member.id === value) && s.active !== value) {

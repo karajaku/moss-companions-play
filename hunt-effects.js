@@ -33,23 +33,42 @@ const HuntEffects=(()=>{
     node.innerHTML=icon('coins')+'<b>반격 보너스 +25%</b><small>승리 시 지급</small>';
     arena.append(node);nodes.push(node);later(()=>node.remove(),1100);
   }
-  function play(hit,before,roll){
+  function play(hit,before,roll,finalHealth){
     cancel();const arena=document.querySelector('.watch-arena');if(!arena)return false;
     const firstCounter=(roll?roll.skill==='counter':hit.kind==='counter')&&!(before.ripostes>0);
-    if(!motionEnabled()){if(firstCounter)counterBonus(arena);return false;}
+
     const bonusStatus=document.querySelector('.watch-counter-status');
     if(firstCounter&&bonusStatus)bonusStatus.style.visibility='hidden';
     completion=new Promise(done=>resolve=done);
     const actors={player:arena.querySelector('.player .watch-actor'),enemy:arena.querySelector('.enemy .watch-actor')};
     const meters={player:arena.querySelector('[data-side="player"]'),enemy:arena.querySelector('[data-side="enemy"]')};
-    const end={player:Number(meters.player.getAttribute('aria-valuenow')),enemy:Number(meters.enemy.getAttribute('aria-valuenow'))};
+    const end={player:finalHealth.hp,enemy:finalHealth.enemyHp};
     const start={player:before.hp,enemy:before.enemyHp};
+    const dice={player:arena.querySelector('[data-die="player"]'),enemy:arena.querySelector('[data-die="enemy"]')};
+    const showDice=roll && dice.player && dice.enemy;
     for(const side of ['player','enemy'])actors[side].removeAttribute('data-defeated');
     const actions=roll||{player:hit.kind==='block'||hit.kind==='parry'?'block':'strike',enemy:'strike'};
     for(const side of ['player','enemy'])updateHealthMeter(meters[side],start[side],start[side],false);
-    const lead=roll?1600:0;
+    if(!motionEnabled()) {
+      arena.dataset.phase='player-hit';
+      if(showDice) for(const side of ['player','enemy']) {
+        const host=dice[side];
+        faceIcon(host.querySelector('.watch-die'),roll[side+'Face']);
+        host.querySelector('span').textContent=names[roll[side]];
+      }
+      updateHealthMeter(meters.enemy,end.enemy,start.enemy,false);
+      if(firstCounter)counterBonus(arena);
+      later(()=>{
+        arena.dataset.phase='settle';
+        updateHealthMeter(meters.player,end.player,start.player,false);
+        for(const side of ['player','enemy'])if(end[side]<=0)actors[side].dataset.defeated='true';
+      },120);
+      later(()=>{if(resolve){const done=resolve;resolve=null;done();}},270);
+      return true;
+    }
+    const lead=showDice?1600:0;
     function diceTurn(side,at){
-      const host=arena.querySelector('[data-die="'+side+'"]'),die=host.querySelector('.watch-die');
+      const host=dice[side],die=host.querySelector('.watch-die');
       host.classList.add('waiting');host.querySelector('span').textContent='대기';die.setAttribute('aria-label','주사위 대기');
       later(()=>{
         arena.dataset.phase=side+'-roll';host.classList.remove('waiting');host.classList.add('rolling');host.querySelector('span').textContent=side==='player'?'내 주사위':'적 주사위';
@@ -62,7 +81,7 @@ const HuntEffects=(()=>{
         },600);
       },at);
     }
-    if(roll){diceTurn('player',0);diceTurn('enemy',800);}else arena.dataset.phase='reveal';
+    if(showDice){diceTurn('player',0);diceTurn('enemy',800);}else arena.dataset.phase='reveal';
     later(()=>{arena.dataset.phase='reveal';},lead);
     function skillFlare(side,key,at){if(!key)return;later(()=>{
       const def=(side==='player'?DiceCombat.skills:DiceCombat.enemySkills)[key],banner=document.createElement('div');
@@ -119,6 +138,7 @@ const HuntEffects=(()=>{
     if(end.enemy>0 && before.enemyKind!=='goblin')strike('enemy',lead+920);
     if(roll?.enemySkill==='escape')later(()=>animate(actors.enemy,[{opacity:1,transform:'translateX(0)'},{opacity:0,transform:'translateX(75%)'}],{duration:430,fill:'forwards'}),lead+940);
     later(()=>{
+      for(const side of ['player','enemy'])updateHealthMeter(meters[side],end[side],end[side],false);
       arena.dataset.phase=end.enemy<=0?'victory':end.player<=0?'defeat':'recover';
       const dead=end.enemy<=0?'enemy':end.player<=0?'player':null;
       if(dead)animate(actors[dead],[{opacity:1,transform:'translateY(0)'},{opacity:.65,transform:'translateY(12px) rotate(14deg)',offset:.45},{opacity:0,transform:'translateY(36px) rotate(30deg) scale(.8)'}],{duration:430,fill:'forwards'});

@@ -2,7 +2,7 @@
 (() => {
   const G = MossGame;
   const panel = document.querySelector("#panel"), notice = document.querySelector("#notice");
-  let db, state, tab = "field", busy = false, automatic = false, timer;
+  let db, state, tab = "field", busy = false, automatic = false, timer, playback;
   const channel = typeof BroadcastChannel === "function" ? new BroadcastChannel("moss-companions.expedition.v1") : null;
   const detail = document.querySelector("#detail");
   for (const slot of document.querySelectorAll("[data-icon]")) slot.innerHTML = icon(slot.dataset.icon);
@@ -13,8 +13,14 @@
     clearTimeout(timer);
     automatic = false;
   }
+  function cancelPlayback() {
+    if (!playback) return;
+    playback.abort();
+    CaptureEffects.cancel();
+  }
   function failed() {
     stop();
+    cancelPlayback();
     state = null;
     if (detail.open) detail.close();
     document.querySelector("#collection").replaceChildren();
@@ -27,13 +33,17 @@
     return new Promise((resolve, reject) => {
       const tx = db.transaction("journey", "readwrite"), store = tx.objectStore("journey");
       const req = store.get("player");
-      let next, changed = false;
+      let next, battle, changed = false;
       tx.onabort = () => reject(tx.error || new Error("저장 중단"));
-      tx.oncomplete = () => resolve({ next, changed });
+      tx.oncomplete = () => resolve({ next, changed, battle });
       req.onsuccess = () => {
         next = req.result === undefined ? G.fresh() : req.result;
         if (next?.version !== 1) { tx.abort(); return; }
-        if (action && next.revision === expected) changed = G.perform(next, action, value);
+        if (action && next.revision === expected) {
+          // The resolver updates both HP values on this object before clearing a finished battle.
+          battle = next.battle;
+          changed = G.perform(next, action, value);
+        }
         if (changed || req.result === undefined) store.put(next, "player");
       };
     });
@@ -47,23 +57,82 @@
       else update("move", G.habitats[next]);
     }, 1400);
   }
+  function motionEnabled() {
+    let prefs;
+    try { prefs = JSON.parse(localStorage.getItem("moss-companions.preferences.v1")); } catch {}
+    return prefs?.motion !== false && (!matchMedia("(prefers-reduced-motion: reduce)").matches || prefs?.motionOverride === true);
+  }
+  function showDamage(index, hp, motion, signal) {
+    const fighter = panel.querySelectorAll(".fighter")[index];
+    const meter = fighter.querySelector("meter"), value = fighter.querySelector("span");
+    const from = meter.value;
+    if (from === hp || signal.aborted) return;
+    const actor = panel.querySelectorAll(".encounter-pair > .portrait")[index];
+    if (motion) actor.animate([{ opacity: .5 }, { opacity: 1 }], { duration: 260 });
+    const duration = motion ? 320 : 0;
+    const hold = hp === 0 ? 650 : 120;
+    notice.textContent = fighter.querySelector("strong").textContent + " 체력 −" + (from - hp);
+    return new Promise(resolve => {
+      let frame;
+      const start = performance.now();
+      function finish() {
+        cancelAnimationFrame(frame);
+        signal.removeEventListener("abort", finish);
+        resolve();
+      }
+      function draw(now) {
+        const elapsed = now - start, fraction = duration ? Math.min(1, elapsed / duration) : 1;
+        meter.value = Math.round(from + (hp - from) * fraction);
+        value.textContent = meter.value + " / " + meter.max;
+        if (meter.value === 0) actor.classList.add("exhausted");
+        if (elapsed >= duration + hold) finish();
+        else frame = requestAnimationFrame(draw);
+      }
+      signal.addEventListener("abort", finish, { once: true });
+      draw(start);
+    });
+  }
+  async function presentTurn(action, next, battle, signal) {
+    const arena = panel.querySelector(".encounter-pair");
+    if (!arena || signal.aborted) return;
+    const motion = motionEnabled();
+    for (const control of panel.querySelectorAll("button")) control.disabled = true;
+    if (action === "catch") {
+      notice.textContent = "펄스 코어 작동 중";
+      const success = next.caught !== null;
+      const finished = await CaptureEffects.play({
+        arena, source: arena.firstElementChild, target: arena.lastElementChild, grade: "woven", success, motion
+      });
+      if (!finished || signal.aborted || success) return;
+    }
+    await showDamage(1, battle.hp, motion, signal);
+    if (!signal.aborted) await showDamage(0, battle.partnerHp, motion, signal);
+  }
   async function update(action, value) {
     if (!db || (action && busy)) return;
     if (action) busy = true;
+    const prev = state;
+    const turn = prev?.battle && (action === "attack" || action === "catch") ? new AbortController() : null;
+    if (turn) playback = turn;
     try {
-      const prev = state;
-      const { next, changed } = await readOrAct(action, value, prev?.revision);
-      if (!action && state && next.revision <= state.revision) return;
+      const { next, changed, battle } = await readOrAct(action, value, prev?.revision);
+      if (state && (next.revision < state.revision || (!action && next.revision === state.revision))) return;
+      if (!action) cancelPlayback();
       state = next;
       if ((action && !changed) || (!action && prev && prev.revision !== next.revision)) stop();
       if (changed) channel?.postMessage(next.revision);
       const paused = changed && action === "move" && automatic && !G.owned(next, next.battle.kind);
-      if (paused) stop();
-      if (changed && next.place === "camp") stop();
+      if (paused || (changed && next.place === "camp")) stop();
+      if (turn && changed && tab === "field" && !document.hidden) {
+        try { await presentTurn(action, next, battle, turn.signal); }
+        catch (error) { console.warn("탐험 연출을 마칠 수 없습니다.", error); }
+      }
+      if (state !== next) return;
       render(changed && action === "move" ? prev.place : null);
       if (paused) notice.textContent = "미포획 생물을 만나 자동 탐험을 멈췄어요. " + next.note;
     } catch { failed(); }
     finally {
+      if (turn && playback === turn) playback = null;
       if (action) busy = false;
       if (!busy) schedule();
     }
@@ -94,7 +163,7 @@
         fighter(b.kind, b.level, b.hp, b.maxHp, G.owned(state, b.kind) ? "야생" : "미포획") + '</div>';
       return heading + actors + stats + '<div class="actions">' +
         button("attack", icon("swords") + G.species[ally.kind].move, "", "side") +
-        button("catch", icon("target") + '포획<small>' + G.captureChance(b) + '%</small>', "", "primary") +
+        button("catch", '<span class="core-shell" aria-hidden="true"></span>포획<small>' + G.captureChance(b) + '%</small>', "", "primary") +
         button("leave", icon("arrow-left") + "물러나기", "", "side") + '</div>';
     }
     const member = caught || ally;
@@ -172,7 +241,8 @@
       return;
     }
     if (el.dataset.tab) {
-      stop(); tab = el.dataset.tab; render(); return;
+      if (el.dataset.tab === tab && playback) return;
+      stop(); cancelPlayback(); tab = el.dataset.tab; render(); return;
     }
     if (busy) return;
     const { action, value } = el.dataset;
@@ -193,7 +263,7 @@
   });
   channel?.addEventListener("message", () => update());
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) { stop(); if (state) render(); }
+    if (document.hidden) { stop(); cancelPlayback(); if (state) render(); }
     else update();
   });
   try {

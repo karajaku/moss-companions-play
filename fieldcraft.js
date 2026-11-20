@@ -2,16 +2,17 @@
 const Fieldcraft = (() => {
   const trail = typeof module !== "undefined" ? require("./hunt-trail.js") : HuntTrail;
   const sites = {
-    vine: { name: "덩굴 숲", material: "질긴 덩굴", types: ["풀", "벌레"] },
-    resin: { name: "수액 숲", material: "끈끈한 수액", types: ["불꽃", "용"] },
-    stone: { name: "수정 굴", material: "빛수정", types: ["땅", "바위"] },
+    vine: { name: "덩굴 숲", material: "전도성 덩굴", types: ["풀", "벌레"] },
+    resin: { name: "수액 숲", material: "전해 수액", types: ["불꽃", "용"] },
+    stone: { name: "수정 굴", material: "광자 결정", types: ["땅", "바위"] },
   };
   const types = { tree:"풀", moth:"벌레", wolf:"불꽃", boar:"땅", golem:"바위",
     tusk:"땅", alpha:"불꽃", wyrm:"용", elder:"풀" };
+  // Inventory and automatic capture preferences use these keys in existing saves.
   const tools = {
-    woven: { name:"덩굴 그물", grade:"일반", bonus:0, cost:{vine:2, resin:2} },
-    reinforced: { name:"강화 그물", grade:"고급", bonus:20, cost:{vine:4, resin:4, stone:2} },
-    prism: { name:"수정 그물", grade:"특급", bonus:40, cost:{vine:6, resin:4, stone:6} },
+    woven: { name:"펄스 코어", grade:"일반", bonus:0, cost:{vine:2, resin:2} },
+    reinforced: { name:"공명 코어", grade:"고급", bonus:20, cost:{vine:4, resin:4, stone:2} },
+    prism: { name:"프리즘 코어", grade:"특급", bonus:40, cost:{vine:6, resin:4, stone:6} },
   };
   const cycle = 60000, handYield = 2;
   function fresh() {
@@ -42,7 +43,7 @@ const Fieldcraft = (() => {
       }
       case "craftNet": {
         if (!Object.hasOwn(tools,arg) || !sufficient(bag,arg)) return fail("제작 재료가 부족합니다.");
-        if (!Number.isSafeInteger(bag.tools[arg]+1)) return fail("그물 보관 한도에 도달했습니다.");
+        if (!Number.isSafeInteger(bag.tools[arg]+1)) return fail("코어 보관 한도에 도달했습니다.");
         for (const [key,n] of Object.entries(tools[arg].cost)) bag.materials[key] -= n;
         bag.tools[arg]++;
         return good(tools[arg].name + " 1개 제작");
@@ -74,15 +75,16 @@ const Fieldcraft = (() => {
           delete h.capturePending;
           return good("야생 생물을 보내 주었습니다.");
         }
-        if (!Object.hasOwn(tools,tool) || !bag.tools[tool]) return fail("선택한 포획 도구가 없습니다.");
+        if (!Object.hasOwn(tools,tool) || !bag.tools[tool]) return fail("선택한 포획 코어가 없습니다.");
         delete h.capturePending;
         h.captureUsed = true;
         bag.tools[tool]--;
         const name = trail.enemy(h.rank,h.enemyKind).name;
-        if (random() * 100 >= chance(h,tool)) return {ok:true,kind:"info",message:name + " 포획 실패 · 그물을 빠져나갔습니다."};
+        const capture = { tool, kind:h.enemyKind, caught:random() * 100 < chance(h,tool) };
+        if (!capture.caught) return {ok:true,kind:"info",capture,message:name + " 탈출 · 포획 코어가 열렸습니다."};
         team.xp[h.enemyKind] = (h.partner.level - 1) * 4;
         h.recruited.push(h.enemyKind);
-        return good(name + " 포획 성공! 다음 토벌에 출전할 수 있습니다.");
+        return {...good(name + " 포획 성공! 다음 토벌에 출전할 수 있습니다."),capture};
       }
     }
   }

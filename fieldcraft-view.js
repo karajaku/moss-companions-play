@@ -3,16 +3,16 @@ const FieldcraftView = (() => {
   const rules = Game.fieldcraft;
   let selectedSite = "vine";
   const nameOf = kind => Game.trail.enemy(1,kind).name;
-  const netArt = key => '<span class="net-art net-' + key + '" aria-hidden="true"></span>';
+  const coreArt = key => '<span class="core-art" data-grade="'+key+'" aria-hidden="true"><i class="core-shell"></i></span>';
   const options = (catalog, selected) => Object.entries(catalog).map(([key,label]) =>
     '<option value="'+key+'"'+(key === selected ? ' selected' : '')+'>'+label+'</option>').join('');
   function capture(s,h) {
     const bag = s.fieldcraft;
     const choice = (tool,label,disabled=false) => '<button class="action" data-act="resolveCapture" data-arg="'+tool+
       '" data-entry="'+encodeURIComponent(h.id)+'" data-wave="'+h.wave+'"'+(disabled?' disabled':'')+'>'+label+'</button>';
-    return '<section class="net-choice" aria-label="포획 선택"><strong>'+nameOf(h.enemyKind)+' 포획 기회</strong><small>토벌당 한 번 · 시도하면 그물 1개 소모</small>' +
+    return '<section class="net-choice" aria-label="포획 선택"><strong>'+nameOf(h.enemyKind)+' 포획 기회</strong><small>토벌당 한 번 · 코어 1개 소모</small>' +
       '<div class="net-grades">'+Object.entries(rules.tools).map(([key,tool]) => choice(key,
-        netArt(key)+'<b>'+tool.name+'</b><span>'+rules.chance(h,key)+'% · '+bag.tools[key]+'개</span>',!bag.tools[key])).join('')+'</div>'+
+        coreArt(key)+'<b>'+tool.name+'</b><span>'+rules.chance(h,key)+'% · '+bag.tools[key]+'개</span>',!bag.tools[key])).join('')+'</div>'+
       '<div class="net-links">'+go('forest/gather','채집·제작')+choice('pass','보내주기')+'</div></section>';
   }
   function workshop(s) {
@@ -33,12 +33,12 @@ const FieldcraftView = (() => {
     const bag = s.fieldcraft;
     const recipes = Object.entries(rules.tools).map(([key,tool]) => {
       const cost = Object.entries(tool.cost).map(([mat,n]) => rules.sites[mat].material+' '+bag.materials[mat]+'/'+n).join(' · ');
-      return '<div class="net-row">'+netArt(key)+'<div><b>'+tool.grade+' · '+tool.name+'</b><small>포획률 +'+tool.bonus+'%p · 보유 '+bag.tools[key]+'개</small><small>'+cost+'</small></div>'+
-        btn('craftNet','1개 제작',key,'action',!rules.sufficient(bag,key))+'</div>';
+      return '<div class="net-row">'+coreArt(key)+'<div><b>'+tool.grade+' · '+tool.name+'</b><small>포획률 +'+tool.bonus+'%p · 보유 '+bag.tools[key]+'개</small><small>'+cost+'</small></div>'+
+        btn('craftNet','1개 조립',key,'action',!rules.sufficient(bag,key))+'</div>';
     }).join('');
     const modes = {manual:'직접 선택',pass:'모두 보내주기'};
     for (const [key,tool] of Object.entries(rules.tools)) modes[key]=tool.name+' 자동 사용';
-    return card('포획 도구',recipes+'<label class="net-setting">자동 토벌 포획<select id="autoNet">'+options(modes,bag.auto)+'</select></label>', 'hammer');
+    return card('포획 코어 조립',recipes+'<label class="net-setting">자동 토벌 포획<select id="autoNet">'+options(modes,bag.auto)+'</select></label>', 'hammer');
   }
   function workersView(s) {
     const bag = s.fieldcraft, site = rules.sites[selectedSite];

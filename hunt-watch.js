@@ -150,7 +150,7 @@ const HuntWatch=(()=>{
     let detail = encounterHint(h,enemy,rank,pack);
     if ((!h || Game.trail.awaitingNext(h)) && joined.length) detail = '새 동료 · ' + joined.map(kind => Game.trail.enemy(rank,kind).name).join(', ');
     if (result?.partner && result.chestId) detail += (detail ? ' / ' : '') + ally.name + ' Lv.' + Game.trail.partner(s,deployed.kind).level;
-    if (encounter?.captureUsed && !joined.length && (!h || Game.trail.awaitingNext(h))) detail = '포획 실패 · 그물을 빠져나갔습니다.';
+    if (encounter?.captureUsed && !joined.length && (!h || Game.trail.awaitingNext(h))) detail = '포획 실패 · 코어에서 탈출했습니다.';
     const first = !s.companions.started && !encounter;
     const badge = '<small><span>단계 '+String(rank).padStart(2,'0')+'</span><i></i>조우 '+(wave+1)+' / '+pack.length+'</small>';
     const outcomeLabel = reward ? reward.rank+'단계 클리어' : result ? (result.chestId?'승리':'패배') : '';
@@ -174,7 +174,7 @@ const HuntWatch=(()=>{
       (first?starterRail(s)+'<div class="hero-name"><small>'+Game.fieldcraft.types[st.kind]+' 타입 · Lv.'+st.level+'</small><h3>'+st.name+'</h3><span>'+icon('sword')+fmt(st.attack)+' <i></i> '+icon('heart')+fmt(st.hp)+'</span></div>':'')+
       (message?'<div class="arena-message">'+message+'</div>':'')+'</div>'+
       '<div class="scene-controls">'+openBtn('huntPlan',icon('settings')+'사냥 준비','side-action')+action+
-        openBtn('tools',icon('backpack')+'포획 도구','side-action')+'</div></section>';
+        openBtn('tools',icon('backpack')+'포획 코어','side-action')+'</div></section>';
   }
   function beforeRender(){if(active&&!allowed())stop('',false);}
   function refreshWallet() {
@@ -197,6 +197,11 @@ const HuntWatch=(()=>{
   async function step(token) {
     if(token!==generation||!active)return;
     if(!live(token)){stop('일시 중단');return;}
+    if(scenePlayback) {
+      await scenePlayback.finished;
+      if(live(token))arm();
+      return;
+    }
     busy=true;
     try {
       const h=state.hunt;
@@ -216,7 +221,6 @@ const HuntWatch=(()=>{
         await act(null,'',undefined,()=>live(token)&&state.hunt?.id===id&&state.hunt.turn===turn&&state.hunt.wave===wave?
           'strike':null);
         if(storageError){stop('저장 상태를 확인해 주세요');return;}
-        await HuntEffects.finished();
         if(token!==generation)return;
         if(!state.hunt&&!state.lastHunt?.chestId){stop('패배 · 이전 구역에서 동료를 키워 보세요');return;}
       } else {
@@ -264,6 +268,7 @@ const HuntWatch=(()=>{
     const button=event.target.closest('[data-watch]');if(!button)return;
     event.preventDefault();event.stopImmediatePropagation();if(!allowed())return;
     if(active){stop('일시 중단');return;}
+    if(scenePlayback)return;
     // Capturing this click bypasses the general UI handler; unlock sound here too.
     if(!state.hunt&&!pending()&&!validRank(nextRank()))return;
     if(prefs.sound)GameSound.unlock();GameMusic.unlock();

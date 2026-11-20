@@ -78,6 +78,9 @@ nav button[aria-pressed=true] { background: #c89950; color: #292418; border-colo
 .actions { display: flex; justify-content: center; gap: 8px; align-items: flex-end; padding-top: 10px; }
 .actions button { padding: 6px 8px; line-height: 1.18; max-width: 35%; }
 .primary { background: var(--brass); color: #fff6d9; border: 2px solid #e6c980; min-width: 96px; min-height: 75px; border-radius: 40% 40% 13px 13px / 22px 22px 13px 13px; }
+.actions .core-shell { width: 30px; height: 30px; }
+.actions button:disabled, .section-head button:disabled { opacity: .7; cursor: default; }
+.encounter-pair .exhausted { opacity: .35; }
 .primary svg { width: 24px; height: 24px; }
 .side { min-height: 54px; min-width: 72px; padding: 5px 9px; font-size: .8rem; }
 .actions .side { flex: 0 1 95px; }

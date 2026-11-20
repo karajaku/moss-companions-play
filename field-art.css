@@ -209,10 +209,9 @@ body.ui-game::after {
 .plan-summary small { display: block; margin-block: 4px 8px; }
 .net-row { justify-content: flex-start; }
 .net-row button { margin-left: auto; }
-.net-art { flex: none; display: inline-block; width: 40px; height: 40px; background: url("assets/field/nets.png") left center / 300% 100%; image-rendering: pixelated; }
-.net-reinforced { background-position: center; }
-.net-prism { background-position: right; }
-.net-grades .net-art { justify-self: center; }
+.core-art { flex: none; display: inline-block; width: 44px; height: 44px; }
+.net-grades .core-art { justify-self: center; }
+.watch-arena[data-capture-phase] .arena-message { display: none; }
 .capture-ready .net-choice { color: #fff0d2; }
 @media (min-width: 700px) {
   body.ui-game { padding-top: 14px; padding-bottom: 10px; }

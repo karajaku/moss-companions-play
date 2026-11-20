@@ -22,6 +22,7 @@ const panel = el("scenePanel");
 let panelName = "";
 let panelTrigger = "";
 let noticeTimer;
+let scenePlayback = null;
 for (const glyph of document.querySelectorAll("[data-icon]")) glyph.innerHTML = icon(glyph.dataset.icon);
 
 function report(message) {
@@ -52,7 +53,7 @@ function paintPanel() {
     el("panelTitle").textContent = "사냥 준비";
     content.innerHTML = HuntWatch.plan(state);
   } else if (panelName === "tools") {
-    el("panelTitle").textContent = "제작";
+    el("panelTitle").textContent = "야영지 제작";
     content.innerHTML = FieldcraftView.recipes(state) + liningView();
   } else if (panelName === "workers") {
     el("panelTitle").textContent = "동료 파견";
@@ -78,6 +79,17 @@ panel.addEventListener("close", () => {
 });
 function render() {
   if (!state) return;
+  if (scenePlayback && huntPage() && !document.hidden && !storageError && scenePlayback.motion === motionEnabled()) {
+    if (panel.open) paintPanel();
+    const toggle = document.querySelector("[data-watch]");
+    if (toggle && !HuntWatch.active) {
+      toggle.disabled = true;
+      toggle.querySelector("b").textContent = "일시 중단";
+    }
+    return;
+  }
+  scenePlayback = null;
+  CaptureEffects.cancel();
   HuntEffects.cancel();
   HuntWatch.beforeRender();
   document.body.dataset.motion = motionEnabled() ? "on" : "off";
@@ -113,7 +125,32 @@ function locked(fn) {
   });
   return queue;
 }
+function presentTurn(before,result) {
+  const arena = document.querySelector(".watch-arena");
+  if (!huntPage() || document.hidden || !arena) return null;
+  let effect;
+  if (result.capture) {
+    const target = arena.querySelector(".enemy .watch-actor");
+    target.removeAttribute("data-defeated");
+    effect = CaptureEffects.play({arena,target,source:arena.querySelector(".player .watch-actor"),
+      grade:result.capture.tool,success:result.capture.caught,motion:motionEnabled()});
+  } else if (before && result.impact) {
+    const final = state.hunt || state.lastHunt;
+    if (HuntEffects.play(result.impact,before,final.lastDice,final.health || final)) effect = HuntEffects.finished();
+  }
+  if (!effect) return null;
+  const session = scenePlayback = {motion:motionEnabled()};
+  for (const button of document.querySelectorAll(".scene-controls button:not([data-watch]), [data-act='resolveCapture']")) button.disabled = true;
+  session.finished = effect.catch(error => { console.error(error); }).then(() => {
+    if (scenePlayback !== session) return;
+    scenePlayback = null;
+    render();
+    if (result.capture || !HuntWatch.active) report(result.message);
+  });
+  return session.finished;
+}
 function act(action,arg="",pressedAt,turnGuard,repeatGuard) {
+  let presentation;
   return locked(() => {
     if (!ready || storageError) return;
     store.check();
@@ -123,17 +160,18 @@ function act(action,arg="",pressedAt,turnGuard,repeatGuard) {
       if (!request) return;
       ({action,arg} = request);
     }
+    if (scenePlayback && ["resolveCapture","huntStart","huntAdvance","strike","openChest"].includes(action)) return;
     const before = state.hunt;
     const candidate = structuredClone(state);
     const result = Game.perform(candidate,action,arg);
     if (result.ok) {
       state = store.commit(candidate);
       HuntWatch.stageOutcome(before);
-      render();
-      if (before && result.impact) HuntEffects.play(result.impact,before,(state.hunt || state.lastHunt)?.lastDice);
+      presentation = presentTurn(before,result);
+      if (!presentation) render();
     }
-    if (!HuntWatch.active || !result.ok) report(result.message);
-  });
+    if (!presentation && (!HuntWatch.active || !result.ok)) report(result.message);
+  }).then(() => presentation);
 }
 function initialize(saved) {
   state = saved;
