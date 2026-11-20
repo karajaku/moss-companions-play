@@ -12,14 +12,24 @@
   <link rel="stylesheet" href="field-art.css">
 </head>
 <body class="ui-game" data-place="forest">
-  <header><h1>이끼숲 동료들</h1><span id="gold"></span></header>
-  <nav id="pageNav" aria-label="활동"><button data-go="forest">사냥터</button><button data-go="forest/gather">채집·제작</button></nav>
+  <header class="resource-bar">
+    <h1 class="sr-only">이끼숲 동료들</h1>
+    <span class="currency" aria-label="보유 골드"><i data-icon="coins"></i><b id="gold"></b></span>
+    <button class="wallet" data-open="huntWallet" aria-label="보유 사냥권과 충전"><i data-icon="ticket"></i><b id="ticketCount"></b></button>
+    <button class="menu" data-open="settings" aria-label="사냥권·설정"><i data-icon="menu"></i></button>
+  </header>
+  <nav id="pageNav" aria-label="활동">
+    <button data-go="forest"><i data-icon="swords"></i>사냥터</button>
+    <button data-go="forest/gather"><i data-icon="hammer"></i>채집·제작</button>
+    <a href="moss.html"><i data-icon="book-open"></i>탐험 도감</a>
+  </nav>
   <main id="screen"></main>
   <p id="notice" role="status"></p>
   <section id="saveError" hidden role="alert">진행을 저장할 수 없습니다. <button id="reload">다시 불러오기</button><button id="recover" hidden>이전 기록 복구</button></section>
-  <details id="settings"><summary>사냥권·설정</summary><p id="wallet"></p><button data-act="daily">오늘의 사냥권 받기</button>
-    <label><input type="checkbox" id="motion">전투 연출</label><label><input type="checkbox" id="music">배경 음악</label><label><input type="checkbox" id="sound">효과음</label>
-  </details>
+  <dialog id="scenePanel" aria-labelledby="panelTitle">
+    <div class="panel-head"><h2 id="panelTitle"></h2><button id="closePanel" aria-label="닫기"><i data-icon="x"></i></button></div>
+    <div id="panelContent"></div><p id="panelNotice" role="status"></p>
+  </dialog>
   <script src="icons.js"></script><script src="dice-combat.js"></script><script src="hunt-trail.js"></script><script src="fieldcraft.js"></script>
   <script src="game.js"></script><script src="save-store.js"></script><script src="music.js"></script><script src="sound.js"></script>
   <script src="helpers.js"></script><script src="combat-hud.js"></script><script src="fieldcraft-view.js"></script>

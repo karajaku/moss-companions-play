@@ -18,6 +18,64 @@ function sound(kind, delay=0) {
 function syncMusic() {
   GameMusic.update(state?.hunt && huntPage() ? "battle" : "forest",{enabled:prefs.music,hidden:document.hidden});
 }
+const panel = el("scenePanel");
+let panelName = "";
+let panelTrigger = "";
+let noticeTimer;
+for (const glyph of document.querySelectorAll("[data-icon]")) glyph.innerHTML = icon(glyph.dataset.icon);
+
+function report(message) {
+  clearTimeout(noticeTimer);
+  el(panel.open ? "panelNotice" : "notice").textContent = message;
+  noticeTimer = setTimeout(() => {
+    el("notice").textContent = "";
+    el("panelNotice").textContent = "";
+  }, 4000);
+}
+function paintPanel() {
+  const content = el("panelContent");
+  const active = content.contains(document.activeElement) ? document.activeElement : null;
+  const focus = active?.id ? "#" + active.id : active?.dataset.act ?
+    '[data-act="' + active.dataset.act + '"][data-arg="' + (active.dataset.arg || '') + '"]' :
+    active?.matches("[data-partner]") ? "[data-partner]" :
+    active?.matches(".watch-mode") ? ".watch-mode" : active?.matches(".trail-replay") ? ".trail-replay" : "";
+  const position = panel.scrollTop;
+  if (panelName === "settings" || panelName === "huntWallet") {
+    const w = Game.huntingStatus(state);
+    el("panelTitle").textContent = "사냥권·설정";
+    content.innerHTML = card("사냥권", '<p class="desc" id="walletBalance">' + walletText(w) + '</p>' +
+      desc("무료 사냥권부터 사용하며 10분마다 1개 충전됩니다.") + btn("daily","오늘의 사냥권 받기"),"ticket") +
+      card("연출과 소리", [["motion","전투 연출"],["music","배경 음악"],["sound","효과음"]].map(([key,label]) =>
+        '<label class="setting-line">' + label + '<input type="checkbox" id="' + key + '"' +
+        ((key === "motion" ? motionEnabled() : prefs[key]) ? " checked" : "") + '></label>').join(""),"settings");
+  } else if (panelName === "huntPlan") {
+    el("panelTitle").textContent = "사냥 준비";
+    content.innerHTML = HuntWatch.plan(state);
+  } else if (panelName === "tools") {
+    el("panelTitle").textContent = "제작";
+    content.innerHTML = FieldcraftView.recipes(state) + liningView();
+  } else if (panelName === "workers") {
+    el("panelTitle").textContent = "동료 파견";
+    content.innerHTML = FieldcraftView.workers(state);
+  }
+  if (focus) content.querySelector(focus)?.focus({preventScroll:true});
+  panel.scrollTop = position;
+}
+function walletText(w) {
+  return "무료 " + fmt(w.free) + "개 · 구매 " + fmt(w.purchased) + "개";
+}
+function openPanel(name) {
+  if (HuntWatch.active && (name === "huntPlan" || name === "tools")) HuntWatch.stop("일시 중단");
+  panelName = panelTrigger = name;
+  paintPanel();
+  el("panelNotice").textContent = "";
+  panel.showModal();
+  panel.scrollTop = 0;
+}
+panel.addEventListener("close", () => {
+  document.querySelector('[data-open="' + panelTrigger + '"]')?.focus({preventScroll:true});
+  panelName = panelTrigger = "";
+});
 function render() {
   if (!state) return;
   HuntEffects.cancel();
@@ -25,14 +83,17 @@ function render() {
   document.body.dataset.motion = motionEnabled() ? "on" : "off";
   const hunt = huntPage();
   el("screen").className = hunt ? "hunt" : "gather";
-  el("screen").innerHTML = hunt ? HuntWatch.view(state) : FieldcraftView.workshop(state) + liningView();
+  el("screen").innerHTML = hunt ? HuntWatch.view(state) : FieldcraftView.workshop(state);
+  const scene = hunt ? document.querySelector(".watch-arena").dataset.region || "moss" : "camp";
+  document.body.style.setProperty("--scene", 'url("assets/' + (hunt ? "hunt/" : "field/") + scene + '.webp")');
   for (const link of document.querySelectorAll("#pageNav button")) {
     if ((link.dataset.go === "forest") === hunt) link.setAttribute("aria-current","page");
     else link.removeAttribute("aria-current");
   }
   el("gold").textContent = fmt(state.gold) + " G";
-  el("wallet").textContent = "보유 사냥권 " + fmt(Game.huntingStatus(state).free) + "개 · 10분마다 1개 충전";
-  for (const key of ["music","sound","motion"]) el(key).checked = key === "motion" ? motionEnabled() : prefs[key];
+  const wallet = Game.huntingStatus(state);
+  el("ticketCount").textContent = fmt(wallet.free + wallet.purchased);
+  if (panel.open) paintPanel();
   syncMusic();
   drawFrames(performance.now());
 }
@@ -45,6 +106,7 @@ function locked(fn) {
   queue = queue.then(() => exclusive(fn)).catch(error => {
     storageError = error;
     HuntWatch.stop("",false);
+    if (panel.open) panel.close();
     el("saveError").hidden = false;
     try { el("recover").hidden = !["corrupt","missing"].includes(error.code) || !store.backup(); } catch {}
     console.error(error);
@@ -70,7 +132,7 @@ function act(action,arg="",pressedAt,turnGuard,repeatGuard) {
       render();
       if (before && result.impact) HuntEffects.play(result.impact,before,(state.hunt || state.lastHunt)?.lastDice);
     }
-    if (!HuntWatch.active || !result.ok) el("notice").textContent = result.message;
+    if (!HuntWatch.active || !result.ok) report(result.message);
   });
 }
 function initialize(saved) {
@@ -92,13 +154,14 @@ document.addEventListener("click",event => {
   if (!button) return;
   if (button.id === "reload") { location.reload(); return; }
   if (button.id === "recover") { locked(() => initialize(store.recover())); return; }
+  if (button.id === "closePanel") { panel.close(); return; }
   if (!ready || storageError) return;
   if (prefs.sound) GameSound.unlock();
   GameMusic.unlock();
   const d = button.dataset;
   if (d.go) { location.hash = d.go; return; }
   if (d.motionPolicy) { changePref("motion",true); return; }
-  if (d.open === "huntWallet") { el("settings").open = true; el("wallet").scrollIntoView(); return; }
+  if (d.open) { openPanel(d.open); return; }
   if (!d.act) return;
   let arg = d.arg;
   if (d.act === "dispatchGatherer") arg = {kind:d.arg,site:el("gatherSite").value};
@@ -113,11 +176,19 @@ document.addEventListener("change",event => {
     if (prefs.music) GameMusic.unlock();
   }
 });
-window.addEventListener("hashchange",() => { el("notice").textContent = ""; render(); });
+window.addEventListener("hashchange",() => {
+  if (panel.open) panel.close();
+  el("notice").textContent = "";
+  render();
+});
 document.addEventListener("visibilitychange",syncMusic);
 reducedMotion.addEventListener("change",render);
 setInterval(() => {
   if (!ready || storageError || document.hidden) return;
+  const wallet = Game.huntingStatus(state);
+  el("ticketCount").textContent = fmt(wallet.free + wallet.purchased);
+  const balance = el("walletBalance");
+  if (balance) balance.textContent = walletText(wallet);
   HuntWatch.refreshWallet();
   FieldcraftView.refreshTrips(state);
 },1000);

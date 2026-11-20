@@ -3,25 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#183e34">
+  <meta name="theme-color" content="#14231c">
   <title>이끼숲 탐험 · 동료 도감</title>
   <link rel="icon" href="assets/hunt/moth.webp">
   <link rel="stylesheet" href="moss.css">
+  <script defer src="icons.js"></script>
+  <script defer src="helpers.js"></script>
   <script defer src="hunt-trail.js"></script>
   <script defer src="moss-game.js"></script>
   <script defer src="moss-view.js"></script>
 </head>
 <body>
-  <header><div class="bar"><b>이끼숲 탐험</b><a href="index.html#forest">본편 동료 사냥터 ↗</a></div></header>
+  <header class="bar">
+    <a href="index.html#forest" class="return-link"><span data-icon="arrow-left"></span>본편 사냥터</a>
+    <span id="collection" aria-label="탐험 기록"></span>
+  </header>
   <main>
-    <nav aria-label="탐험 메뉴">
-      <button data-tab="field" aria-pressed="true">탐험 지도</button>
-      <button data-tab="team" aria-pressed="false">내 동료</button>
-      <button data-tab="dex" aria-pressed="false">생물 도감</button>
-    </nav>
     <section id="panel" aria-label="이끼숲 탐험"></section>
     <p id="notice" role="status">탐험 기록을 불러오는 중…</p>
     <button id="retry" hidden>탐험 기록 다시 열기</button>
   </main>
+  <nav aria-label="탐험 메뉴">
+    <button data-tab="field" aria-pressed="true"><span data-icon="map-pin"></span>탐험 지도</button>
+    <button data-tab="team" aria-pressed="false"><span data-icon="heart"></span>내 동료</button>
+    <button data-tab="dex" aria-pressed="false"><span data-icon="book-open"></span>생물 도감</button>
+  </nav>
+  <dialog id="detail" aria-labelledby="detail-name">
+    <form method="dialog"><button aria-label="상세 닫기" autofocus>닫기</button></form>
+    <div id="entry"></div>
+  </dialog>
 </body>
 </html>

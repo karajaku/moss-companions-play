@@ -16,14 +16,32 @@ const FieldcraftView = (() => {
       '<div class="net-links">'+go('forest/gather','채집·제작')+choice('pass','보내주기')+'</div></section>';
   }
   function workshop(s) {
-    const bag = s.fieldcraft, site = rules.sites[selectedSite];
-    const sites = Object.entries(rules.sites).map(([key,p]) => '<button class="action gather-site" data-act="gatherMaterial" data-arg="'+key+'"><img src="assets/field/'+key+'.webp" alt=""><b>'+p.name+
-      '</b><span>'+p.material+' +'+rules.handYield+'</span><small>보유 '+fmt(bag.materials[key])+'</small></button>').join('');
+    const site = rules.sites[selectedSite];
+    const sites = Object.entries(rules.sites).map(([key,p]) =>
+      '<button class="rail-item gather-site" data-site-pick="'+key+'" aria-pressed="'+(key===selectedSite)+'"><img src="assets/field/'+key+'.webp" alt=""><b>'+p.name+'</b></button>').join('');
+    const lead = Object.keys(s.fieldcraft.trips).find(kind => s.fieldcraft.trips[kind].site === selectedSite) || s.companions.active;
+    return '<section class="camp-view"><div class="scene-heading"><small>채집터</small><h2>'+site.name+'</h2></div>'+
+      '<div class="side-rail" role="group" aria-label="채집터 선택">'+sites+'</div>'+
+      '<div class="camp-partner">'+companionPortrait(lead)+'</div>'+
+      '<div class="harvest-stock"><b>'+site.material+'</b><span>보유 '+fmt(s.fieldcraft.materials[selectedSite])+'개</span></div>'+
+      '<div class="scene-controls">'+openBtn('workers',icon('trees')+'동료 파견','side-action')+
+        btn('gatherMaterial',icon('pickaxe')+'<b>채집</b><small>'+site.material+' +'+rules.handYield+'</small>',selectedSite,'main-action')+
+        openBtn('tools',icon('hammer')+'제작','side-action')+'</div>'+
+      (rules.pending(s)?go('forest','포획 대기로 돌아가기','return-hunt'):'')+'</section>';
+  }
+  function recipesView(s) {
+    const bag = s.fieldcraft;
     const recipes = Object.entries(rules.tools).map(([key,tool]) => {
       const cost = Object.entries(tool.cost).map(([mat,n]) => rules.sites[mat].material+' '+bag.materials[mat]+'/'+n).join(' · ');
       return '<div class="net-row">'+netArt(key)+'<div><b>'+tool.grade+' · '+tool.name+'</b><small>포획률 +'+tool.bonus+'%p · 보유 '+bag.tools[key]+'개</small><small>'+cost+'</small></div>'+
         btn('craftNet','1개 제작',key,'action',!rules.sufficient(bag,key))+'</div>';
     }).join('');
+    const modes = {manual:'직접 선택',pass:'모두 보내주기'};
+    for (const [key,tool] of Object.entries(rules.tools)) modes[key]=tool.name+' 자동 사용';
+    return card('포획 도구',recipes+'<label class="net-setting">자동 토벌 포획<select id="autoNet">'+options(modes,bag.auto)+'</select></label>', 'hammer');
+  }
+  function workersView(s) {
+    const bag = s.fieldcraft, site = rules.sites[selectedSite];
     const workers = Object.keys(s.companions.xp).map(kind => {
       const trip=bag.trips[kind], fighting=s.hunt?.partner?.kind===kind;
       const where=trip?.site || selectedSite;
@@ -34,13 +52,8 @@ const FieldcraftView = (() => {
       return '<div class="net-row">'+companionPortrait(kind)+'<div>'+identity+progress+'</div>'+action+'</div>';
     }).join('');
     const labels = Object.fromEntries(Object.entries(rules.sites).map(([k,p])=>[k,p.name]));
-    const modes = {manual:'직접 선택',pass:'모두 보내주기'};
-    for (const [key,tool] of Object.entries(rules.tools)) modes[key]=tool.name+' 자동 사용';
-    return '<div class="field-workshop">'+(rules.pending(s)?go('forest','포획 대기로 돌아가기','action'):'')+
-      card('직접 채집','<div class="net-grades">'+sites+'</div>', 'trees')+
-      card('포획 도구 제작',recipes+'<label class="net-setting">자동 토벌 포획<select id="autoNet">'+options(modes,bag.auto)+'</select></label>', 'hammer')+
-      card('동료 자동 채집','<label class="net-setting">채집터<select id="gatherSite">'+options(labels,selectedSite)+'</select></label>'+
-        desc(site.material+' · '+site.types.join('·')+' 타입은 수확 2배. 접속을 종료해도 1분마다 쌓이며 복귀할 때 받습니다.')+workers,'backpack')+'</div>';
+    return '<label class="net-setting">채집터<select id="gatherSite">'+options(labels,selectedSite)+'</select></label>'+
+      desc(site.material+' · '+site.types.join('·')+' 타입은 수확 2배. 1분마다 쌓이며 복귀할 때 받습니다.')+workers;
   }
   function tripStatus(s,kind) {
     const trip=s.fieldcraft.trips[kind], now=Math.max(Date.now(),s.hunting.observedAt);
@@ -56,5 +69,12 @@ const FieldcraftView = (() => {
     if (e.target.id==='gatherSite') { selectedSite=e.target.value; render(); }
     if (e.target.id==='autoNet') act('setAutoNet',e.target.value);
   });
-  return {workshop,capture,refreshTrips};
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-site-pick]');
+    if (!button || !Object.hasOwn(rules.sites,button.dataset.sitePick)) return;
+    selectedSite = button.dataset.sitePick;
+    render();
+    document.querySelector('[data-site-pick="'+selectedSite+'"]')?.focus({preventScroll:true});
+  });
+  return {workshop,capture,refreshTrips,recipes:recipesView,workers:workersView};
 })();
