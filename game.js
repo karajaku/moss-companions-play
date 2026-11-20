@@ -5,6 +5,58 @@ const Game = (() => {
   const fieldcraft = typeof module !== "undefined" ? require("./fieldcraft.js") : Fieldcraft;
   const day = (t) => new Date(t + 32400000).toISOString().slice(0, 10);
   const hunting = { initial: 30, cap: 30, interval: 600000, daily: 10 };
+  // n7's base sword table: Lv.1 starts at +0. Past +19, use the final odds until the companion cap.
+  // Each row is success, one-level drop, reset to Lv.1 (percent). The remainder holds.
+  const trainingRates = [
+    [100,0,0], [100,0,0], [100,0,0], [95,0,0], [90,0,0],
+    [85,0,0], [80,0,0], [75,0,0], [65,3,0], [55,5,0],
+    [50,8,2], [40,10,5], [32,10,5], [24,10,5], [16,10,5],
+    [10,10,5], [6,10,5], [3,10,5], [2,10,5], [1,10,5],
+  ];
+  function trainingStatus(s, kind) {
+    const owned = typeof kind === "string" && Object.hasOwn(s.companions.xp, kind);
+    const level = owned ? trail.partnerLevel(s.companions.xp[kind]) : 0;
+    const canGrow = owned && level < trail.levelCap;
+    const [success, drop, reset] = canGrow ? trainingRates[Math.min(level, trainingRates.length) - 1] : [0,0,0];
+    const cost = canGrow && level > 1 ? Math.round(80 + 40 * (level - 1) ** 1.8) : 0;
+    let reason = "";
+    if (!owned) reason = "보유한 동료를 선택하세요.";
+    else if (!canGrow) reason = "최고 레벨에 도달했습니다.";
+    else if (s.hunt?.partner?.kind === kind) reason = "사냥을 마친 뒤 훈련할 수 있습니다.";
+    else if (s.fieldcraft.trips[kind]) reason = "채집에서 복귀한 뒤 훈련할 수 있습니다.";
+    else if (s.gold < cost) reason = "훈련 골드가 부족합니다.";
+    return {kind, level, cost, chances:{success, hold:canGrow ? 100 - success - drop - reset : 0, drop, reset}, reason};
+  }
+  function trainCompanion(s, request, random) {
+    if (!s._save || request?.generation !== s._save.generation || request.revision !== s._save.revision)
+      return {ok:false, message:"훈련 상태가 바뀌었습니다. 현재 레벨을 확인하세요."};
+    const {kind, level, chances, cost, reason} = trainingStatus(s, request.kind);
+    if (reason) return {ok:false, message:reason};
+    const roll = random() * 100;
+    const xp = s.companions.xp[kind];
+    let outcome = "hold";
+    let nextXp = xp;
+    let label = "레벨 유지";
+    if (roll < chances.success) {
+      outcome = "success";
+      nextXp = Math.min(xp + trail.xpPerLevel, trail.xpCap);
+      label = "훈련 성공";
+    } else if (roll >= 100 - chances.reset) {
+      outcome = "reset";
+      nextXp = 0;
+      label = "훈련 실패";
+    } else if (roll >= 100 - chances.reset - chances.drop) {
+      outcome = "drop";
+      nextXp = xp - trail.xpPerLevel;
+      label = "한 단계 하락";
+    }
+    s.gold -= cost;
+    s.companions.xp[kind] = nextXp;
+    const to = trail.partnerLevel(nextXp);
+    return {ok:true, kind:outcome === "success" ? "win" : "loss",
+      message:trail.enemy(1,kind).name + " · " + label + " · Lv." + level + " → Lv." + to,
+      training:{kind,outcome,from:level,to}};
+  }
   function freshHunting(t) {
     return { version: 1, id: globalThis.crypto.randomUUID(), free: hunting.initial, purchased: 0,
       rechargeAt: null, observedAt: t, daily: "", serial: 0, lastStart: null };
@@ -69,6 +121,8 @@ const Game = (() => {
     const success = (message,kind="info") => ({ok:true,message,kind});
     const int = (a,b) => a+Math.floor(random()*(b-a+1));
     switch(act) {
+      case "trainCompanion":
+        return trainCompanion(s,arg,random);
       case "daily":
         if (s.hunting.daily===day(t)) return fail("오늘의 사냥권을 이미 받았습니다.");
         s.hunting.daily=day(t);
@@ -248,6 +302,6 @@ const Game = (() => {
       default: return fail("알 수 없는 행동입니다.");
     }
   }
-  return {fresh,perform,trail,fieldcraft,huntEnemy,liningCosts,forestYield,hunting,huntingStatus,settleHunting,blessings};
+  return {fresh,perform,trail,fieldcraft,training:{status:trainingStatus},huntEnemy,liningCosts,forestYield,hunting,huntingStatus,settleHunting,blessings};
 })();
 if (typeof module !== "undefined") module.exports=Game;

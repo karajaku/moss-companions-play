@@ -82,7 +82,7 @@ const Fieldcraft = (() => {
         const name = trail.enemy(h.rank,h.enemyKind).name;
         const capture = { tool, kind:h.enemyKind, caught:random() * 100 < chance(h,tool) };
         if (!capture.caught) return {ok:true,kind:"info",capture,message:name + " 탈출 · 포획 코어가 열렸습니다."};
-        team.xp[h.enemyKind] = (h.partner.level - 1) * 4;
+        team.xp[h.enemyKind] = (h.partner.level - 1) * trail.xpPerLevel;
         h.recruited.push(h.enemyKind);
         return {...good(name + " 포획 성공! 다음 토벌에 출전할 수 있습니다."),capture};
       }

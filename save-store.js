@@ -46,7 +46,7 @@ const SaveStore = (() => {
     if (team !== undefined) {
       if (!object(team) || !object(team.xp) || typeof team.started !== "boolean" ||
           !Object.hasOwn(team.xp, team.active) || Object.entries(team.xp).some(([kind, xp]) =>
-            !Object.hasOwn(trail.companions, kind) || !Number.isInteger(xp) || xp < 0 || xp > 236) ||
+            !Object.hasOwn(trail.companions, kind) || !Number.isInteger(xp) || xp < 0 || xp > trail.xpCap) ||
           (!team.started && (Object.keys(team.xp).length !== 1 || !trail.starters.includes(team.active)))) throw fault("corrupt");
     } else if (Number.isInteger(data.huntBest)) {
       defaults.companions = trail.freshTeam(data.huntBest);

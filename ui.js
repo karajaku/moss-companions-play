@@ -9,7 +9,12 @@ const prefs = {music:true, sound:true, motion:true, motionOverride:false};
 try { Object.assign(prefs,JSON.parse(localStorage.getItem(preferenceKey))); } catch {}
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const motionEnabled = () => prefs.motion && (!reducedMotion.matches || prefs.motionOverride);
-const huntPage = () => location.hash !== "#forest/gather";
+function pageRoute() {
+  if (location.hash === "#forest/training") return "forest/training";
+  if (location.hash === "#forest/gather") return "forest/gather";
+  return "forest";
+}
+const huntPage = () => pageRoute() === "forest";
 let ready = false, storageError = null, state = null;
 let queue = Promise.resolve();
 function sound(kind, delay=0) {
@@ -25,9 +30,11 @@ let noticeTimer;
 let scenePlayback = null;
 for (const glyph of document.querySelectorAll("[data-icon]")) glyph.innerHTML = icon(glyph.dataset.icon);
 
-function report(message) {
+function report(message, alreadyVisible = false) {
   clearTimeout(noticeTimer);
-  el(panel.open ? "panelNotice" : "notice").textContent = message;
+  const notice = el(panel.open ? "panelNotice" : "notice");
+  notice.toggleAttribute("data-announcement",alreadyVisible);
+  notice.textContent = message;
   noticeTimer = setTimeout(() => {
     el("notice").textContent = "";
     el("panelNotice").textContent = "";
@@ -58,6 +65,9 @@ function paintPanel() {
   } else if (panelName === "workers") {
     el("panelTitle").textContent = "동료 파견";
     content.innerHTML = FieldcraftView.workers(state);
+  } else if (panelName === "trainees") {
+    el("panelTitle").textContent = "훈련할 동료";
+    content.innerHTML = TrainingView.roster(state);
   }
   if (focus) content.querySelector(focus)?.focus({preventScroll:true});
   panel.scrollTop = position;
@@ -93,13 +103,15 @@ function render() {
   HuntEffects.cancel();
   HuntWatch.beforeRender();
   document.body.dataset.motion = motionEnabled() ? "on" : "off";
-  const hunt = huntPage();
-  el("screen").className = hunt ? "hunt" : "gather";
-  el("screen").innerHTML = hunt ? HuntWatch.view(state) : FieldcraftView.workshop(state);
-  const scene = hunt ? document.querySelector(".watch-arena").dataset.region || "moss" : "camp";
+  const route = pageRoute(), hunt = route === "forest", training = route === "forest/training";
+  const refocusTrain = training && document.activeElement?.dataset.act === "trainCompanion";
+  el("screen").className = hunt ? "hunt" : training ? "training" : "gather";
+  el("screen").innerHTML = hunt ? HuntWatch.view(state) : training ? TrainingView.view(state) : FieldcraftView.workshop(state);
+  if (refocusTrain) document.querySelector('[data-act="trainCompanion"]:enabled')?.focus({preventScroll:true});
+  const scene = hunt ? document.querySelector(".watch-arena").dataset.region || "moss" : training ? "training" : "camp";
   document.body.style.setProperty("--scene", 'url("assets/' + (hunt ? "hunt/" : "field/") + scene + '.webp")');
   for (const link of document.querySelectorAll("#pageNav button")) {
-    if ((link.dataset.go === "forest") === hunt) link.setAttribute("aria-current","page");
+    if (link.dataset.go === route) link.setAttribute("aria-current","page");
     else link.removeAttribute("aria-current");
   }
   el("gold").textContent = fmt(state.gold) + " G";
@@ -166,11 +178,13 @@ function act(action,arg="",pressedAt,turnGuard,repeatGuard) {
     const result = Game.perform(candidate,action,arg);
     if (result.ok) {
       state = store.commit(candidate);
+      if (result.training) TrainingView.remember(result.training);
       HuntWatch.stageOutcome(before);
       presentation = presentTurn(before,result);
       if (!presentation) render();
+      if (result.training) TrainingView.play(result.training);
     }
-    if (!presentation && (!HuntWatch.active || !result.ok)) report(result.message);
+    if (!presentation && (!HuntWatch.active || !result.ok)) report(result.message,!!result.training);
   }).then(() => presentation);
 }
 function initialize(saved) {
@@ -197,11 +211,18 @@ document.addEventListener("click",event => {
   if (prefs.sound) GameSound.unlock();
   GameMusic.unlock();
   const d = button.dataset;
+  if (d.trainee) {
+    TrainingView.select(d.trainee);
+    panel.close();
+    render();
+    return;
+  }
   if (d.go) { location.hash = d.go; return; }
   if (d.motionPolicy) { changePref("motion",true); return; }
   if (d.open) { openPanel(d.open); return; }
   if (!d.act) return;
   let arg = d.arg;
+  if (d.act === "trainCompanion") arg = TrainingView.request(button);
   if (d.act === "dispatchGatherer") arg = {kind:d.arg,site:el("gatherSite").value};
   if (d.act === "recallGatherer") arg = {kind:d.arg,start:Number(d.start),site:d.site};
   if (d.act === "resolveCapture") arg = {id:decodeURIComponent(d.entry),wave:Number(d.wave),tool:d.arg};
@@ -215,6 +236,7 @@ document.addEventListener("change",event => {
   }
 });
 window.addEventListener("hashchange",() => {
+  TrainingView.leave();
   if (panel.open) panel.close();
   el("notice").textContent = "";
   render();
@@ -261,5 +283,10 @@ function drawFrames(now) {
     canvas.dataset.frame = String(frame);
   }
 }
-setInterval(() => { if (ready && !document.hidden && huntPage() && motionEnabled()) drawFrames(performance.now()); },90);
-locked(() => initialize(store.load() || store.commit(Game.fresh())));
+setInterval(() => {
+  if (ready && !document.hidden && pageRoute() !== "forest/gather" && motionEnabled()) drawFrames(performance.now());
+},90);
+locked(() => {
+  const saved = store.load();
+  initialize(!saved || store.needsMigration ? store.commit(saved || Game.fresh()) : saved);
+});
