@@ -257,7 +257,7 @@ const woodlandSprites = new Set(["tree","moth","wolf","goblin"]);
 let dewRedraw = 0;
 function combatSprite(name) {
   const dew = Object.hasOwn(DewTimeline,name), woodland = woodlandSprites.has(name);
-  const size = dew ? 320 : woodland ? 224 : 144;
+  const size = dew ? 48 : woodland ? 224 : 144;
   const style = dew ? 'trail-creature dew-creature' : woodland ? 'trail-creature' : '';
   return '<canvas class="' + style + '" width="' + size + '" height="' + size +
     '" data-sprite="' + name + '" aria-hidden="true"></canvas>';
@@ -299,7 +299,7 @@ function drawFrames(now) {
       !motionEnabled() ? 0 : attacking ? 4 + Math.floor((now-start)/90) : Math.floor(now/180)%4;
     if (canvas.dataset.frame === String(frame)) continue;
     const ctx = canvas.getContext("2d");
-    ctx.imageSmoothingEnabled = !!clips;
+    ctx.imageSmoothingEnabled = false;
     const size = sheet.naturalHeight;
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(sheet,frame*size,0,size,size,0,0,canvas.width,canvas.height);

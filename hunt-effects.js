@@ -104,13 +104,18 @@ const HuntEffects=(()=>{
       const dir=side==='player'?1:-1;
       const own=actors[side].getBoundingClientRect(),other=actors[target].getBoundingClientRect();
       const dx=(other.left+other.width/2-own.left-own.width/2)*.65,dy=(other.top+other.height/2-own.top-own.height/2)*.65;
+      const pixelActor = actors[side].querySelector(".dew-creature");
+      function pose(x,y,angle,scale=1) {
+        if (pixelActor) return `translate(${Math.round(x)}px,${Math.round(y)}px)`;
+        return `translate(${x}px,${y}px) rotate(${angle}deg) scale(${scale})`;
+      }
+      const contact = pose(dx,dy,charge?0:dir*20,charge?1.22:heavy?1.16:1.04);
       later(()=>{
         arena.dataset.phase=side+'-windup';
         actors[side].dataset.attackAt=String(performance.now());
-        if (actors[side].querySelector(".dew-creature")) drawFrames(performance.now());
+        if (pixelActor) drawFrames(performance.now());
         actors[side].dataset.attacking='true';
-        const contact=`translate(${dx}px,${dy}px) rotate(${charge?0:dir*20}deg) scale(${charge?1.22:heavy?1.16:1.04})`;
-        animate(actors[side],[{transform:'translate(0,0) rotate(0)',easing:'ease-in'},{transform:`translate(${-dx*.16}px,${-dy*.16}px) rotate(${-dir*(heavy?26:14)}deg)`,offset:.30,easing:'cubic-bezier(.15,.8,.2,1)'},{transform:contact,offset:.5},{transform:contact,offset:heavy?.66:.60,easing:'ease-out'},{transform:'translate(0,0) rotate(0)'}],{duration:600});
+        animate(actors[side],[{transform:pose(0,0,0),easing:'ease-in'},{transform:pose(-dx*.16,-dy*.16,-dir*(heavy?26:14)),offset:.30,easing:'cubic-bezier(.15,.8,.2,1)'},{transform:contact,offset:.5},{transform:contact,offset:heavy?.66:.60,easing:'ease-out'},{transform:pose(0,0,0)}],{duration:600});
         later(()=>delete actors[side].dataset.attacking,600);
       },at);
       later(()=>{
@@ -125,7 +130,7 @@ const HuntEffects=(()=>{
           const ward=actors[target].querySelector('.watch-ward');
           animate(ward,[{opacity:1,transform:'scale(1)'},{opacity:1,transform:'scale(.82,1.1)',filter:'brightness(1.5)',offset:.18},{opacity:.9,transform:'scale('+ (charge?1.3:1.15)+')',offset:.4},{opacity:0,transform:'scale(1.05)',filter:'brightness(1)'}],{duration:charge?550:400,fill:'forwards'});
           // Deflection replaces the remaining lunge at contact, keeping the original turn timing.
-          animate(actors[side],[{transform:`translate(${dx}px,${dy}px) rotate(${charge?0:dir*20}deg) scale(${charge?1.22:heavy?1.16:1.04})`},{transform:`translate(${dx-dir*(charge?42:22)}px,${dy+dir*16}px) rotate(${-dir*18}deg) scale(.95)`,offset:.36},{transform:'translate(0,0) rotate(0)'}],{duration:300,easing:'ease-out'});
+          animate(actors[side],[{transform:contact},{transform:pose(dx-dir*(charge?42:22),dy+dir*16,-dir*18,.95),offset:.36},{transform:pose(0,0,0)}],{duration:300,easing:'ease-out'});
           if(charge)animate(document.querySelector('[data-skill="counter"]'),[{transform:'scale(1)',filter:'brightness(1)'},{transform:'scale(1.18)',filter:'brightness(1.7)',offset:.3},{transform:'scale(1)',filter:'brightness(1)'}],{duration:500});
         }
         const recoil=`translate(${dir*(held?6:charge?40:heavy?28:16)}px,${-dir*(held?3:charge?23:heavy?16:9)}px)`;

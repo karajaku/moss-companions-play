@@ -164,6 +164,7 @@ body.ui-game::after {
 .art-tree { background-image: url("assets/hunt/tree.webp"); }
 .art-moth { background-image: url("assets/hunt/moth.webp"); }
 .art-wolf { background-image: url("assets/hunt/wolf.webp"); }
+.art-dew1, .art-dew2, .art-dew3, .dew-creature { image-rendering: pixelated; }
 .art-dew1, .art-dew2, .art-dew3 { background-size: 900% 100%; background-position: 12.5% center; }
 .art-dew1 { background-image: url("assets/hunt/dew1-sheet.webp"); }
 .art-dew2 { background-image: url("assets/hunt/dew2-sheet.webp"); }
