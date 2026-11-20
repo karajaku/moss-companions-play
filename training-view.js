@@ -15,7 +15,7 @@ const TrainingView = (() => {
     return '<div class="training-roster">' + Object.keys(s.companions.xp).map(kind => {
       const partner = Game.trail.partner(s,kind);
       return '<button data-trainee="' + kind + '" aria-pressed="' + (target(s) === kind) + '">' +
-        companionPortrait(kind) + '<span><b>' + partner.name + '</b><small>Lv.' + partner.level + ' · ' + Game.fieldcraft.types[kind] +
+        companionPortrait(partner.sprite) + '<span><b>' + partner.name + '</b><small>Lv.' + partner.level + ' · ' + Game.fieldcraft.types[kind] +
         ' 타입</small></span>' + (target(s) === kind ? icon("check") : '') + '</button>';
     }).join('') + '</div>';
   }

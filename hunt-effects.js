@@ -107,6 +107,7 @@ const HuntEffects=(()=>{
       later(()=>{
         arena.dataset.phase=side+'-windup';
         actors[side].dataset.attackAt=String(performance.now());
+        if (actors[side].querySelector(".dew-creature")) drawFrames(performance.now());
         actors[side].dataset.attacking='true';
         const contact=`translate(${dx}px,${dy}px) rotate(${charge?0:dir*20}deg) scale(${charge?1.22:heavy?1.16:1.04})`;
         animate(actors[side],[{transform:'translate(0,0) rotate(0)',easing:'ease-in'},{transform:`translate(${-dx*.16}px,${-dy*.16}px) rotate(${-dir*(heavy?26:14)}deg)`,offset:.30,easing:'cubic-bezier(.15,.8,.2,1)'},{transform:contact,offset:.5},{transform:contact,offset:heavy?.66:.60,easing:'ease-out'},{transform:'translate(0,0) rotate(0)'}],{duration:600});

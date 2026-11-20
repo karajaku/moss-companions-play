@@ -179,7 +179,7 @@ body[data-motion="on"] .watch-receipt :is(.watch-receipt-head > b, .watch-receip
 .partner-pick { display:inline-flex; align-items:center; gap:5px; color:#c6e6cc; font-weight:bold; font-size:12px; }
 .watch-plan:has(.trail-replay):has(.watch-motion-hint) .partner-pick { grid-column:1/-1; justify-self:center; }
 .watch-arena .player .trail-creature { transform:scaleX(-1); }
-.ui-game[data-place="forest"] .watch-arena .player canvas:not([data-sprite^="blade"]) { transform:scaleX(-1); }
+.ui-game[data-place="forest"] .watch-arena .player canvas:not([data-sprite^="blade"],.dew-creature) { transform:scaleX(-1); }
 .watch-plan .watch-motion-hint button { min-width:44px; }
 
 .field-workshop { display:grid; gap:10px; padding-bottom:8px; }

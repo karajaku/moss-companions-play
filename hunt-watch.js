@@ -15,23 +15,26 @@ const HuntWatch=(()=>{
   const spending = w => '무료 '+fmt(w.free)+' 먼저 · 소진 시 구매 '+fmt(w.purchased)+' 사용';
   function starterRail(s) {
     const team = s.companions;
-    return '<fieldset class="starter-pick"><legend>시작 동료</legend><div>' + Game.trail.starters.map(kind =>
-        '<button data-act="choosePartner" data-arg="' + kind + '" aria-pressed="' + (team.active === kind) + '"' +
-        (s.fieldcraft.trips[team.active] ? ' disabled' : '') + '>' + companionPortrait(kind) +
-        '<b>' + Game.trail.enemy(1,kind).name + '</b><small>' + Game.fieldcraft.types[kind] + ' 타입</small></button>'
-      ).join('') + '</div></fieldset>';
+    return '<fieldset class="starter-pick"><legend>시작 동료</legend><div>' + Game.trail.starters.map(kind => {
+      const partner = Game.trail.partner(s,kind);
+      const reason = Game.trail.partnerChoice(s,kind).reason;
+      return '<button data-act="choosePartner" data-arg="' + kind + '" aria-pressed="' + (team.active === kind) + '"' +
+        (reason ? ' disabled title="' + reason + '"' : '') + '>' + companionPortrait(partner.sprite) +
+        '<b>' + partner.name + '</b><small>' + Game.fieldcraft.types[kind] + ' 타입</small></button>';
+    }).join('') + '</div></fieldset>';
   }
   function selector(s, held) {
     const motion = motionEnabled() ? '' : '<div class="watch-motion-hint"><button class="mini" data-motion-policy="full"><small>' +
       (reducedMotion.matches && !prefs.motionOverride ? '기기 설정으로 정지' : '연출 꺼짐') + '</small>연출 켜기</button></div>';
     if (active) return motion;
     const team = s.companions;
-    const partnerSelect = team.started ? '<label class="partner-pick">' + companionPortrait(team.active) + (s.hunt ? '다음 출전' : '출전 동료') +
-      '<select aria-label="출전 동료 선택" data-partner>' + Object.keys(team.xp).map(kind => {
-        const level = Game.trail.partnerLevel(team.xp[kind]);
+    const partnerSelect = team.started ? '<label class="partner-pick">' + companionPortrait(Game.trail.partner(s).sprite) + (s.hunt ? '다음 출전' : '출전 동료') +
+      '<select aria-label="출전 동료 선택" data-partner>' + Game.trail.availablePartners(team).map(kind => {
+        const partner = Game.trail.partner(s,kind);
         const away = s.fieldcraft.trips[kind];
+        const status = away ? '채집 중' : Object.hasOwn(team.xp,kind) ? 'Lv.' + partner.level : '무료 합류';
         return '<option value="' + kind + '"' + (team.active === kind ? ' selected' : '') + (away ? ' disabled' : '') + '>' +
-          Game.trail.enemy(1,kind).name + ' · ' + (away ? '채집 중' : 'Lv.' + level) + '</option>';
+          partner.name + ' · ' + status + '</option>';
       }).join('') + '</select></label>' :
       '';
     const chooseRank = mode === 'repeat' || s.huntBest >= 60;
@@ -123,7 +126,7 @@ const HuntWatch=(()=>{
     const st=Game.trail.partner(s),roll=encounter?.lastDice;
     const useDice=h?h.diceVersion===1:true;
     const deployed = encounter?.partner;
-    const ally = deployed ? Game.trail.enemy(1,deployed.kind) : st;
+    const ally = deployed ? Game.trail.appearance(deployed.kind,deployed.stage) : st;
     const sprite = ally.sprite;
     const allyLabel = ally.name + ' Lv.' + (deployed?.level || st.level);
     const resultHealth=!h?(outcome||((reward||pending()||reason.startsWith('패배'))?s.lastHunt?.health:null)):null;

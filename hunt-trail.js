@@ -50,29 +50,65 @@ const HuntTrail = (() => {
   function awaitingNext(h) {
     return h?.trailVersion === 1 && (h.enemyHp === 0 || h.lastDice?.enemySkill === "escape");
   }
-  // Species share their name and artwork with their wild encounter.
   const companions = {
-    tree: [32, 195], moth: [39, 150], wolf: [43, 140], boar: [35, 180],
+    tree: [32, 195], moth: [39, 150], wolf: [43, 140], boar: [35, 180], dew: [36, 172],
     golem: [34, 210], tusk: [40, 195], alpha: [47, 155], wyrm: [45, 175], elder: [36, 225],
   };
-  const starters = ["tree", "moth", "wolf"];
+  const starters = ["tree", "moth", "wolf", "dew"];
+  const dewForms = [
+    { name: "이슬귀토끼", sprite: "dew1" },
+    { name: "양치깃뜀토", sprite: "dew2" },
+    { name: "고사리관 토끼", sprite: "dew3" },
+  ];
   const levelCap = 60, xpPerLevel = 4, xpCap = (levelCap - 1) * xpPerLevel;
   const partnerLevel = xp => 1 + Math.min(levelCap - 1, Math.floor(xp / xpPerLevel));
+  function dewStageAt(level) {
+    if (level >= 30) return 3;
+    return level >= 12 ? 2 : 1;
+  }
+  function availablePartners(team) {
+    if (!team.started) return starters;
+    const owned = Object.keys(team.xp);
+    return owned.includes("dew") ? owned : [...owned, "dew"];
+  }
+  function partnerChoice(s, kind) {
+    const team = s.companions;
+    if (s.fieldcraft.trips[kind]) return { reason: "파견 중인 동료를 먼저 복귀시켜 주세요." };
+    if (Object.hasOwn(team.xp, kind) || kind === "dew") return {};
+    if (team.started || !starters.includes(kind)) return { reason: "아직 만난 동료가 아닙니다." };
+    // The free rabbit is independent of the original interchangeable starter.
+    const replace = Object.keys(team.xp).find(owned => owned !== "dew");
+    if (s.fieldcraft.trips[replace]) return { reason: "시작 동료를 바꾸기 전에 파견에서 복귀시켜 주세요." };
+    return { replace };
+  }
+  function appearance(kind, stage = 1) {
+    const { name, sprite } = kind === "dew" ? dewForms[stage - 1] : enemies[kind];
+    return { name, sprite };
+  }
+  function setPartnerXp(team, kind, xp) {
+    if (kind === "dew") {
+      const highestLevel = partnerLevel(Math.max(team.xp.dew ?? 0, xp));
+      team.dewStage = Math.max(team.dewStage ?? 1, dewStageAt(highestLevel));
+    }
+    team.xp[kind] = xp;
+  }
   function freshTeam(rank = 1) {
     return { active: starters[0], started: false, xp: { tree: xpPerLevel * (Math.min(levelCap, Math.max(1, rank)) - 1) } };
   }
   function partner(s, kind = s.companions.active) {
-    const xp = s.companions.xp[kind];
+    const xp = s.companions.xp[kind] ?? 0;
     const level = partnerLevel(xp);
     const [power, vitality] = companions[kind];
     const attack = Math.round(power * (1 + .36 * (level - 1) ** 1.65));
     const hp = Math.round((vitality + 38 * (level - 1)) * (1 + .04 * s.huntLining));
-    return { kind, name: enemies[kind].name, sprite: enemies[kind].sprite, level, attack, hp };
+    const stage = kind === "dew" ? Math.max(s.companions.dewStage ?? 1, dewStageAt(level)) : 1;
+    return { kind, ...appearance(kind, stage), stage, level, attack, hp };
   }
   function defeat(s, h) {
     const team = s.companions;
-    team.xp[h.partner.kind] = Math.min(xpCap, team.xp[h.partner.kind] + 2);
+    setPartnerXp(team, h.partner.kind, Math.min(xpCap, team.xp[h.partner.kind] + 2));
   }
-  return { region, lineup, enemy, opponent, enter, awaitingNext, companions, starters, freshTeam, levelCap, xpPerLevel, xpCap, partnerLevel, partner, defeat };
+  return { region, lineup, enemy, opponent, enter, awaitingNext, companions, starters, availablePartners, partnerChoice,
+    appearance, freshTeam, levelCap, xpPerLevel, xpCap, partnerLevel, dewStageAt, setPartnerXp, partner, defeat };
 })();
 if (typeof module !== "undefined") module.exports = HuntTrail;

@@ -51,10 +51,10 @@ const Game = (() => {
       label = "한 단계 하락";
     }
     s.gold -= cost;
-    s.companions.xp[kind] = nextXp;
+    trail.setPartnerXp(s.companions, kind, nextXp);
     const to = trail.partnerLevel(nextXp);
     return {ok:true, kind:outcome === "success" ? "win" : "loss",
-      message:trail.enemy(1,kind).name + " · " + label + " · Lv." + level + " → Lv." + to,
+      message:trail.partner(s,kind).name + " · " + label + " · Lv." + level + " → Lv." + to,
       training:{kind,outcome,from:level,to}};
   }
   function freshHunting(t) {
@@ -161,11 +161,13 @@ const Game = (() => {
       }
       case "choosePartner": {
         const team = s.companions;
-        if (s.fieldcraft.trips[arg]) return fail("파견 중인 동료를 먼저 복귀시켜 주세요.");
-        if (!Object.hasOwn(team.xp, arg)) {
-          if (s.fieldcraft.trips[team.active]) return fail("시작 동료를 바꾸기 전에 파견에서 복귀시켜 주세요.");
-          if (team.started || !trail.starters.includes(arg)) return fail("아직 만난 동료가 아닙니다.");
-          team.xp = { [arg]: team.xp[team.active] };
+        const choice = trail.partnerChoice(s, arg);
+        if (choice.reason) return fail(choice.reason);
+        if (choice.replace) {
+          team.xp[arg] = team.xp[choice.replace];
+          delete team.xp[choice.replace];
+        } else if (!Object.hasOwn(team.xp, arg)) {
+          team.xp[arg] = 0;
         }
         team.active = arg;
         return success(trail.partner(s).name + (s.hunt ? " · 다음 토벌에 출전합니다." : " · 출전 준비 완료"));
@@ -199,6 +201,7 @@ const Game = (() => {
           maxHp:partner.hp,attack:partner.attack,guardReduction:0,counter:false,momentum:1,ripostes:0,
           diceVersion:1,skillVersion:2,skillCooldowns:{heavyStrike:0,counter:0},trailVersion:1,
           materialRule:1,bonusEncounter:random()<.15,goblinCaught:false};
+        if (partner.kind === "dew") s.hunt.partner.stage = partner.stage;
         trail.enter(s.hunt,0);
         return { ...success(huntEnemy(s.hunt).habitat + " " + rank + "구역 사냥 시작 · 사냥권 1개 사용"), receipt: { ...w.lastStart } };
       }

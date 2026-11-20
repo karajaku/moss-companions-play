@@ -6,7 +6,7 @@ const Fieldcraft = (() => {
     resin: { name: "수액 숲", material: "전해 수액", types: ["불꽃", "용"] },
     stone: { name: "수정 굴", material: "광자 결정", types: ["땅", "바위"] },
   };
-  const types = { tree:"풀", moth:"벌레", wolf:"불꽃", boar:"땅", golem:"바위",
+  const types = { tree:"풀", moth:"벌레", wolf:"불꽃", boar:"땅", golem:"바위", dew:"풀",
     tusk:"땅", alpha:"불꽃", wyrm:"용", elder:"풀" };
   // Inventory and automatic capture preferences use these keys in existing saves.
   const tools = {
@@ -53,7 +53,7 @@ const Fieldcraft = (() => {
         if (!Object.hasOwn(sites,site) || !Object.hasOwn(team.xp,kind) || bag.trips[kind] || kind === s.hunt?.partner?.kind)
           return fail("채집에 보낼 수 있는 동료를 선택하세요.");
         bag.trips[kind] = {site,start:now};
-        return good(trail.enemy(1,kind).name + " · " + sites[site].name + " 파견");
+        return good(trail.partner(s,kind).name + " · " + sites[site].name + " 파견");
       }
       case "recallGatherer": {
         const trip = bag.trips[arg?.kind];

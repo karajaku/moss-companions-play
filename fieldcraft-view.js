@@ -22,7 +22,7 @@ const FieldcraftView = (() => {
     const lead = Object.keys(s.fieldcraft.trips).find(kind => s.fieldcraft.trips[kind].site === selectedSite) || s.companions.active;
     return '<section class="camp-view"><div class="scene-heading"><small>채집터</small><h2>'+site.name+'</h2></div>'+
       '<div class="side-rail" role="group" aria-label="채집터 선택">'+sites+'</div>'+
-      '<div class="camp-partner">'+companionPortrait(lead)+'</div>'+
+      '<div class="camp-partner">'+companionPortrait(Game.trail.partner(s,lead).sprite)+'</div>'+
       '<div class="harvest-stock"><b>'+site.material+'</b><span>보유 '+fmt(s.fieldcraft.materials[selectedSite])+'개</span></div>'+
       '<div class="scene-controls">'+openBtn('workers',icon('trees')+'동료 파견','side-action')+
         btn('gatherMaterial',icon('pickaxe')+'<b>채집</b><small>'+site.material+' +'+rules.handYield+'</small>',selectedSite,'main-action')+
@@ -45,11 +45,12 @@ const FieldcraftView = (() => {
     const workers = Object.keys(s.companions.xp).map(kind => {
       const trip=bag.trips[kind], fighting=s.hunt?.partner?.kind===kind;
       const where=trip?.site || selectedSite;
-      const identity='<b>'+nameOf(kind)+'</b><small>'+rules.types[kind]+' 타입 · '+rules.rate(kind,where)+'개/분</small>';
+      const partner = Game.trail.partner(s,kind);
+      const identity='<b>'+partner.name+'</b><small>'+rules.types[kind]+' 타입 · '+rules.rate(kind,where)+'개/분</small>';
       const progress=trip ? '<small data-trip="'+kind+'">'+tripStatus(s,kind)+'</small>' : '';
       const action=trip ? '<button class="action" data-act="recallGatherer" data-arg="'+kind+'" data-start="'+trip.start+'" data-site="'+trip.site+'">수령·복귀</button>' :
         btn('dispatchGatherer',fighting?'토벌 중':'파견',kind,'action',fighting);
-      return '<div class="net-row">'+companionPortrait(kind)+'<div>'+identity+progress+'</div>'+action+'</div>';
+      return '<div class="net-row">'+companionPortrait(partner.sprite)+'<div>'+identity+progress+'</div>'+action+'</div>';
     }).join('');
     const labels = Object.fromEntries(Object.entries(rules.sites).map(([k,p])=>[k,p.name]));
     return '<label class="net-setting">채집터<select id="gatherSite">'+options(labels,selectedSite)+'</select></label>'+

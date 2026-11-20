@@ -164,6 +164,10 @@ body.ui-game::after {
 .art-tree { background-image: url("assets/hunt/tree.webp"); }
 .art-moth { background-image: url("assets/hunt/moth.webp"); }
 .art-wolf { background-image: url("assets/hunt/wolf.webp"); }
+.art-dew1, .art-dew2, .art-dew3 { background-size: 900% 100%; background-position: 12.5% center; }
+.art-dew1 { background-image: url("assets/hunt/dew1-sheet.webp"); }
+.art-dew2 { background-image: url("assets/hunt/dew2-sheet.webp"); }
+.art-dew3 { background-image: url("assets/hunt/dew3-sheet.webp"); }
 .art-boar,.art-golem,.art-dragon { background-size: 800% 100%; background-position: left; image-rendering: pixelated; }
 .art-boar { background-image: url("assets/boar-sheet.png"); }
 .art-golem { background-image: url("assets/golem-sheet.png"); }

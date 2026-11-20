@@ -47,7 +47,10 @@ const SaveStore = (() => {
       if (!object(team) || !object(team.xp) || typeof team.started !== "boolean" ||
           !Object.hasOwn(team.xp, team.active) || Object.entries(team.xp).some(([kind, xp]) =>
             !Object.hasOwn(trail.companions, kind) || !Number.isInteger(xp) || xp < 0 || xp > trail.xpCap) ||
-          (!team.started && (Object.keys(team.xp).length !== 1 || !trail.starters.includes(team.active)))) throw fault("corrupt");
+          (!team.started && (Object.keys(team.xp).filter(kind => kind !== "dew").length !== 1 ||
+            Object.keys(team.xp).some(kind => !trail.starters.includes(kind))))) throw fault("corrupt");
+      if (team.dewStage !== undefined && (!Object.hasOwn(team.xp, "dew") || !Number.isInteger(team.dewStage) ||
+          team.dewStage < trail.dewStageAt(trail.partnerLevel(team.xp.dew)) || team.dewStage > 3)) throw fault("corrupt");
     } else if (Number.isInteger(data.huntBest)) {
       defaults.companions = trail.freshTeam(data.huntBest);
     }
@@ -61,6 +64,11 @@ const SaveStore = (() => {
           !Object.hasOwn(team.xp, battle.partner.kind) || !Number.isInteger(battle.partner.level) ||
           battle.partner.level < 1 || battle.partner.level > 60 || !Array.isArray(battle.recruited) ||
           !battle.recruited.every(kind => Object.hasOwn(team.xp, kind)))) throw fault("corrupt");
+      if (battle?.partner?.kind === "dew") {
+        const { level, stage } = battle.partner;
+        if (!Number.isInteger(stage) || stage < trail.dewStageAt(level) ||
+            stage > trail.partner(data, "dew").stage) throw fault("corrupt");
+      }
     }
     if (data.fieldcraft !== undefined && !game.fieldcraft.valid(data.fieldcraft, team || defaults.companions, data.hunt)) throw fault("corrupt");
     if (data.version === 2 && (!Number.isSafeInteger(data.forestFiber) || data.forestFiber < 0 ||

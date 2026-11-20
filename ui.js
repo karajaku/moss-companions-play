@@ -254,29 +254,52 @@ setInterval(() => {
 },1000);
 const sheets = new Map();
 const woodlandSprites = new Set(["tree","moth","wolf","goblin"]);
+let dewRedraw = 0;
 function combatSprite(name) {
-  const woodland = woodlandSprites.has(name);
-  const size = woodland ? 224 : 144;
-  return '<canvas class="' + (woodland ? 'trail-creature' : '') + '" width="' + size + '" height="' + size +
+  const dew = Object.hasOwn(DewTimeline,name), woodland = woodlandSprites.has(name);
+  const size = dew ? 320 : woodland ? 224 : 144;
+  const style = dew ? 'trail-creature dew-creature' : woodland ? 'trail-creature' : '';
+  return '<canvas class="' + style + '" width="' + size + '" height="' + size +
     '" data-sprite="' + name + '" aria-hidden="true"></canvas>';
+}
+function dewFrame(clips, actor, now) {
+  if (!motionEnabled()) return clips.idle.first + Math.floor(clips.idle.ends.length / 2);
+  let elapsed = now - Number(actor.dataset.attackAt);
+  const approach = actor.classList.contains("trainee") ? 0 : clips.hunt.ends.at(-1);
+  let clip = clips.idle;
+  if (elapsed >= 0 && elapsed < approach + clips.battle.ends.at(-1)) {
+    clip = elapsed < approach ? clips.hunt : clips.battle;
+    if (clip === clips.battle) elapsed -= approach;
+    // Short approach cels need a presentation frame between the slower idle ticks.
+    if (!dewRedraw) dewRedraw = requestAnimationFrame(time => {
+      dewRedraw = 0;
+      drawFrames(time);
+    });
+  } else {
+    elapsed = now % clip.ends.at(-1);
+  }
+  return clip.first + clip.ends.findIndex(end => elapsed < end);
 }
 function drawFrames(now) {
   for (const canvas of document.querySelectorAll("canvas[data-sprite]")) {
     const name = canvas.dataset.sprite;
+    const clips = DewTimeline[name];
     let sheet = sheets.get(name);
     if (!sheet) {
       sheet = new Image();
-      sheet.src = woodlandSprites.has(name) ? "assets/hunt/" + name + "-sheet.webp" : "assets/" + name + "-sheet.png";
+      sheet.src = clips || woodlandSprites.has(name) ? "assets/hunt/" + name + "-sheet.webp" : "assets/" + name + "-sheet.png";
       sheets.set(name,sheet);
       sheet.onload = () => drawFrames(performance.now());
     }
     if (!sheet.naturalWidth) continue;
-    const start = Number(canvas.closest(".watch-actor").dataset.attackAt);
+    const actor = canvas.closest(".watch-actor");
+    const start = Number(actor.dataset.attackAt);
     const attacking = now >= start && now - start < 360;
-    const frame = !motionEnabled() ? 0 : attacking ? 4 + Math.floor((now-start)/90) : Math.floor(now/180)%4;
+    const frame = clips ? dewFrame(clips,actor,now) :
+      !motionEnabled() ? 0 : attacking ? 4 + Math.floor((now-start)/90) : Math.floor(now/180)%4;
     if (canvas.dataset.frame === String(frame)) continue;
     const ctx = canvas.getContext("2d");
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = !!clips;
     const size = sheet.naturalHeight;
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(sheet,frame*size,0,size,size,0,0,canvas.width,canvas.height);
